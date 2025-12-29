@@ -12,6 +12,8 @@ export interface AddChannelResult {
     channelTitle?: string;
 }
 
+const PRESET_COLORS = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#6366f1', '#8b5cf6', '#ec4899', '#06b6d4', '#f43f5e'];
+
 export const useAppData = (session: any) => {
     const [apiKeys, setApiKeysState] = useState<ApiKey[]>([]);
     const [trackedChannels, setTrackedChannels] = useState<ChannelStats[]>([]);
@@ -53,6 +55,7 @@ export const useAppData = (session: any) => {
                 
                 const { data: channels } = await supabase.from('tracked_channels').select('*');
                 if (channels) {
+                  // FIX: Correctly map database fields (snake_case) to ChannelStats properties (camelCase)
                   setTrackedChannels(channels.map(c => ({
                     id: c.id, title: c.title, description: c.description, customUrl: c.custom_url || '',
                     thumbnailUrl: c.thumbnail_url, subscriberCount: c.subscriber_count, videoCount: c.video_count,
@@ -65,7 +68,13 @@ export const useAppData = (session: any) => {
                 
                 const { data: groups } = await supabase.from('channel_groups').select('*');
                 if (groups) {
-                    setChannelGroups(groups.map(g => ({ id: g.id, name: g.name, channelIds: g.channel_ids, createdAt: g.created_at || new Date().toISOString() })));
+                    setChannelGroups(groups.map(g => ({ 
+                        id: g.id, 
+                        name: g.name, 
+                        channelIds: g.channel_ids, 
+                        createdAt: g.created_at || new Date().toISOString(),
+                        color: g.color || PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)]
+                    })));
                 }
 
                 const { data: moviesData } = await supabase.from('movies').select('*');
@@ -171,6 +180,7 @@ export const useAppData = (session: any) => {
 
                 const stats = await getChannelStats(channelId);
                 const today = getTodaysDateString();
+                // FIX: Access stats using camelCase properties (customUrl, viewCount) as defined in ChannelStats type
                 const dbChannel = { 
                     id: stats.id, user_id: session.user.id, title: stats.title, 
                     description: stats.description, custom_url: stats.customUrl, 
@@ -179,6 +189,7 @@ export const useAppData = (session: any) => {
                     uploads_playlist_id: stats.uploadsPlaylistId, 
                     history: [{ date: today, timestamp: Date.now(), subscriberCount: stats.subscriberCount, viewCount: stats.viewCount, videoCount: stats.videoCount }], 
                     status: stats.status || 'active', published_at: stats.publishedAt, 
+                    // FIX: Access camelCase properties newestVideo and oldestVideo instead of snake_case versions
                     newest_video: stats.newestVideo, oldest_video: stats.oldestVideo,
                     added_at: new Date().toISOString()
                 };
@@ -247,15 +258,22 @@ export const useAppData = (session: any) => {
         try { await supabase.from('movies').delete().eq('id', id); } catch (err: any) {}
     };
     
-    const handleSaveGroup = async (group: Omit<ChannelGroup, 'id'> & { id?: string }) => {
+    const handleSaveGroup = async (group: Omit<ChannelGroup, 'id' | 'color'> & { id?: string; color?: string }) => {
         if (!session) return;
-        const payload = { user_id: session.user.id, name: group.name, channel_ids: group.channelIds };
+        const color = group.color || PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)];
+        const payload = { 
+            user_id: session.user.id, 
+            name: group.name, 
+            channel_ids: group.channelIds,
+            color: color
+        };
+        
         if (group.id) {
             await supabase.from('channel_groups').update(payload).eq('id', group.id);
-            setChannelGroups(prev => prev.map(g => g.id === group.id ? { ...g, ...group, id: group.id!, createdAt: g.createdAt } : g));
+            setChannelGroups(prev => prev.map(g => g.id === group.id ? { ...g, ...group, id: group.id!, color: color, createdAt: g.createdAt } : g));
         } else {
             const { data } = await supabase.from('channel_groups').insert(payload).select();
-            if (data && data[0]) setChannelGroups(prev => [...prev, { id: data[0].id, name: data[0].name, channelIds: data[0].channel_ids, createdAt: data[0].created_at }]);
+            if (data && data[0]) setChannelGroups(prev => [...prev, { id: data[0].id, name: data[0].name, channelIds: data[0].channel_ids, color: data[0].color, createdAt: data[0].created_at }]);
         }
     };
 

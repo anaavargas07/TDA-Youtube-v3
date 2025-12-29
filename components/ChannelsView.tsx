@@ -1,8 +1,7 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { ChannelTable } from './ChannelTable';
-// import { GroupsView } from './GroupsView'; // Removed, now handled by GroupsOverviewModal
-// FIX: Import specific SortKey and SortDirection types from GroupsView to avoid conflict
-import { SortKey as GroupsViewSortKey, SortDirection as GroupsViewSortDirection } from './GroupsOverviewModal'; // Adjusted import
+import { SortKey as GroupsViewSortKey, SortDirection as GroupsViewSortDirection } from './GroupsOverviewModal';
 import { MultiSelectDropdown, Option } from './MultiSelectDropdown';
 import { AddChannelModal } from './AddChannelModal';
 import { SummaryCards } from './SummaryCards';
@@ -15,7 +14,7 @@ type SortKey = 'title' | 'subscriberCount' | 'videoCount' | 'viewCount' | 'publi
 type SortDirection = 'asc' | 'desc';
 
 interface ChannelsViewProps {
-    currentSubView: 'allChannels'; // Simplified: now only 'allChannels' is managed here
+    currentSubView: 'allChannels';
     trackedChannels: ChannelStats[];
     channelGroups: ChannelGroup[];
     onAddChannel: (channelInput: string) => Promise<AddChannelResult[]>;
@@ -26,9 +25,9 @@ interface ChannelsViewProps {
     isAdding: boolean;
     apiKeySet: boolean;
     settings: AppSettings;
-    setChannelGroups: React.Dispatch<React.SetStateAction<ChannelGroup[]>>; // Passed from App.tsx
-    setEditingGroup: React.Dispatch<React.SetStateAction<ChannelGroup | null>>; // Passed from App.tsx
-    setIsGroupModalOpen: React.Dispatch<React.SetStateAction<boolean>>; // Passed from App.tsx
+    setChannelGroups: React.Dispatch<React.SetStateAction<ChannelGroup[]>>;
+    setEditingGroup: React.Dispatch<React.SetStateAction<ChannelGroup | null>>;
+    setIsGroupModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const ALL_CHANNEL_COLUMNS: Option[] = [
@@ -41,20 +40,8 @@ const ALL_CHANNEL_COLUMNS: Option[] = [
     { id: 'oldestVideo', label: 'Oldest Video', icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0118 0Z" /></svg> },
 ];
 
-const ALL_GROUP_COLUMNS: Option[] = [ // Moved here for ChannelsView's MultiSelectDropdown
-    { id: 'name', label: 'Group Name' },
-    { id: 'createdAt', label: 'Created At' },
-    { id: 'channelCount', label: 'Channels' },
-];
-
-const timeOptions: Option[] = [ // Moved here for ChannelsView's MultiSelectDropdown
-    { id: 'today', label: 'Created Today' },
-    { id: '7d', label: 'Last 7 Days' },
-    { id: '30d', label: 'Last 30 Days' },
-];
-
 export const ChannelsView: React.FC<ChannelsViewProps> = ({
-    currentSubView, // Now always 'allChannels' here
+    currentSubView,
     trackedChannels, channelGroups, onAddChannel, onSelectChannel, onRemoveChannel,
     onSaveGroup, onDeleteGroup, isAdding, apiKeySet, settings, setChannelGroups,
     setEditingGroup, setIsGroupModalOpen
@@ -67,7 +54,7 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
     const [selectedChannelIds, setSelectedChannelIds] = useState<string[]>([]);
     const [channelSortConfig, setChannelSortConfig] = useState<{ key: SortKey; direction: SortDirection }>({ key: 'subscriberCount', direction: 'desc' });
     
-    // Shared states for bulk actions (only for channels now)
+    // Shared states for bulk actions
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [activeBulkMenu, setActiveBulkMenu] = useState<'group' | null>(null);
     const [bulkSearchTerm, setBulkSearchTerm] = useState('');
@@ -95,12 +82,12 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
         return () => window.removeEventListener('keydown', handleEsc);
     }, [activeBulkMenu, selectedChannelIds]);
 
-
     const groupOptions: Option[] = useMemo(() => channelGroups.map(g => ({ 
         id: g.id, 
         label: g.name, 
-        color: '#4f46e5',
-        icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.625-4.016a11.955 11.955 0 0 1-8.618 3.04A12.02 12.02 0 0 0 3 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016Z" /></svg>
+        color: g.color || '#4f46e5'
+        // FIX: Removed icon property to eliminate the redundant larger dot.
+        // MultiSelectDropdown will now only render the smaller w-2 h-2 dot via the color property.
     })), [channelGroups]);
 
     // Filtered and sorted channels for ChannelTable
@@ -147,7 +134,6 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
 
 
     const handleConfirmDelete = () => {
-        // Now only handles channel deletion
         selectedChannelIds.forEach(id => onRemoveChannel(id));
         setSelectedChannelIds([]);
         setIsDeleteModalOpen(false);
@@ -161,7 +147,7 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
                 const targetGroup = channelGroups.find(g => g.id === groupId);
                 if (targetGroup) {
                     const combinedChannelIds = Array.from(new Set([...targetGroup.channelIds, ...selectedChannelIds]));
-                    onSaveGroup({ ...targetGroup, channelIds: combinedChannelIds }); // Use onSaveGroup for update
+                    onSaveGroup({ ...targetGroup, channelIds: combinedChannelIds });
                 }
             });
             setSelectedChannelIds([]);
@@ -172,7 +158,7 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
     };
 
     const togglePendingValue = (val: string) => {
-        if (activeBulkMenu === 'group') { // Only 'group' bulk action for channels
+        if (activeBulkMenu === 'group') {
             setPendingBulkValues(prev => prev.includes(val) ? prev.filter(v => v !== val) : [...prev, val]);
         } else {
             setPendingBulkValues([val]);
@@ -183,10 +169,10 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
         <button 
             onClick={(e) => {
                 e.stopPropagation();
-                setEditingGroup(null); // Clear any existing group for new creation
+                setEditingGroup(null);
                 setIsGroupModalOpen(true);
-                setActiveBulkMenu(null); // Close bulk menu if open
-                setPendingBulkValues([]); // Clear pending values
+                setActiveBulkMenu(null);
+                setPendingBulkValues([]);
             }}
             className="w-full flex items-center justify-center gap-2 py-2 text-[10px] font-bold text-indigo-400 hover:text-indigo-300 hover:bg-white/5 transition-all"
         >
@@ -197,7 +183,6 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
 
     return (
         <div className="w-full space-y-6 pb-20 relative">
-            {/* Filter & Add Controls */}
             <div className="bg-gray-800/20 p-4 rounded-2xl border border-gray-700/50 space-y-4 shadow-xl animate-fade-in">
                 <div className="flex flex-row gap-4 items-center h-11">
                     <div className="relative flex-grow h-full">
@@ -240,12 +225,10 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
                 </div>
             </div>
             
-            {/* Summary Cards */}
             <div className="animate-fade-in">
                 <SummaryCards channels={filteredAndSortedChannels} />
             </div>
 
-            {/* Channel Table */}
             <div className="animate-fade-in">
                 <ChannelTable 
                     channels={filteredAndSortedChannels} 
@@ -278,7 +261,10 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
                                         <>
                                             {channelGroups.filter(g => g.name.toLowerCase().includes(bulkSearchTerm.toLowerCase())).map(g => (
                                                 <button key={g.id} onClick={() => togglePendingValue(g.id)} className={`w-full text-left px-4 py-2 text-xs truncate flex justify-between items-center transition-colors ${pendingBulkValues.includes(g.id) ? 'bg-indigo-600/30 text-white' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}>
-                                                    {g.name}
+                                                    <div className="flex items-center gap-2 truncate">
+                                                        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: g.color }}></div>
+                                                        <span className="truncate">{g.name}</span>
+                                                    </div>
                                                     {pendingBulkValues.includes(g.id) && <span className="text-indigo-400 font-bold ml-2">✓</span>}
                                                 </button>
                                             ))}

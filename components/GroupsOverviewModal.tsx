@@ -1,10 +1,11 @@
+
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { GroupSummaryCards } from './GroupSummaryCards';
 import { MultiSelectDropdown, Option } from './MultiSelectDropdown';
-import { BulkActionBar } from './BulkActionBar'; // Import BulkActionBar
-import { DeleteConfirmModal } from './DeleteConfirmModal'; // Import DeleteConfirmModal
-import { CircularCheckbox } from './CircularCheckbox'; // Import from new file
-import { SortableHeader } from './SortableHeader'; // Import from new file
+import { BulkActionBar } from './BulkActionBar';
+import { DeleteConfirmModal } from './DeleteConfirmModal';
+import { CircularCheckbox } from './CircularCheckbox';
+import { SortableHeader } from './SortableHeader';
 import type { ChannelGroup, ChannelStats, AppSettings } from '../types';
 
 interface GroupsOverviewModalProps {
@@ -12,9 +13,9 @@ interface GroupsOverviewModalProps {
     onClose: () => void;
     groups: ChannelGroup[];
     channels: ChannelStats[];
-    onEditGroup: (group: ChannelGroup) => void; // Passed from App.tsx, opens GroupSettingsModal
-    onDeleteGroup: (groupId: string) => void; // Passed from App.tsx
-    onCreateGroup: () => void; // Passed from App.tsx, opens GroupSettingsModal
+    onEditGroup: (group: ChannelGroup) => void;
+    onDeleteGroup: (groupId: string) => void;
+    onCreateGroup: () => void;
     settings: AppSettings;
 }
 
@@ -22,9 +23,9 @@ export type SortKey = 'name' | 'channelCount' | 'createdAt';
 export type SortDirection = 'asc' | 'desc';
 
 const ALL_GROUP_COLUMNS: Option[] = [
-    { id: 'name', label: 'Group Name', icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg> },
-    { id: 'createdAt', label: 'Created At', icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> },
-    { id: 'channelCount', label: 'Channels', icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg> },
+    { id: 'name', label: 'Group Name' },
+    { id: 'createdAt', label: 'Created At' },
+    { id: 'channelCount', label: 'Channels' },
 ];
 
 const timeOptions: Option[] = [
@@ -44,7 +45,6 @@ export const GroupsOverviewModal: React.FC<GroupsOverviewModalProps> = ({
     const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-    // Shortcut Esc to close
     useEffect(() => {
         const handleEsc = (e: KeyboardEvent) => {
             if (e.key === 'Escape' && isOpen) onClose();
@@ -53,7 +53,6 @@ export const GroupsOverviewModal: React.FC<GroupsOverviewModalProps> = ({
         return () => window.removeEventListener('keydown', handleEsc);
     }, [isOpen, onClose]);
 
-    // Clear selection when modal opens/closes or groups change
     useEffect(() => {
         if (isOpen) {
             setSelectedGroupIds([]);
@@ -162,7 +161,6 @@ export const GroupsOverviewModal: React.FC<GroupsOverviewModalProps> = ({
                         Groups <span className="text-indigo-400">Overview</span>
                     </h1>
 
-                    {/* Controls */}
                     <div className="bg-gray-800/20 p-4 rounded-xl border border-gray-700/50 space-y-4 shadow-xl">
                         <div className="flex flex-row gap-4 items-center h-11">
                             <div className="relative flex-grow h-full">
@@ -186,7 +184,6 @@ export const GroupsOverviewModal: React.FC<GroupsOverviewModalProps> = ({
                                 selectedIds={visibleColumns}
                                 onChange={setVisibleColumns}
                                 className="w-40 h-full"
-                                icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 4.5v15m6-15v15m-10.875 0h15.75c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H4.125C3.504 4.5 3 5.004 3 5.625v12.75c0 .621.504 1.125 1.125 1.125Z" /></svg>}
                             />
 
                             <button
@@ -199,16 +196,6 @@ export const GroupsOverviewModal: React.FC<GroupsOverviewModalProps> = ({
                                 Add Group
                             </button>
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <MultiSelectDropdown 
-                                label="Filter by Time"
-                                options={timeOptions}
-                                selectedIds={timeFilter}
-                                onChange={setTimeFilter}
-                                className="w-full h-11"
-                                icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                            />
-                        </div>
                     </div>
                     
                     <div className="mt-8">
@@ -219,11 +206,10 @@ export const GroupsOverviewModal: React.FC<GroupsOverviewModalProps> = ({
                         <table className="min-w-full divide-y divide-gray-700/50 table-fixed">
                             <thead className="bg-gray-900/50">
                                 <tr>
-                                    <th className="px-4 py-2.5 w-12 text-center sticky left-0 z-10 bg-inherit shadow-[4px_0_10px_rgba(0,0,0,0.2)]">
+                                    <th className="px-4 py-2.5 w-12 text-center sticky left-0 z-10 bg-inherit">
                                         <CircularCheckbox 
                                             checked={filteredAndSortedGroups.length > 0 && selectedGroupIds.length === filteredAndSortedGroups.length}
                                             onChange={handleToggleAll}
-                                            label="Select all groups"
                                         />
                                     </th>
                                     {isVisible('name') && (
@@ -232,7 +218,7 @@ export const GroupsOverviewModal: React.FC<GroupsOverviewModalProps> = ({
                                             sortKey="name" 
                                             currentSort={sortConfig} 
                                             onSort={handleSortChange}
-                                            icon={<svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>}
+                                            align="left"
                                         />
                                     )}
                                     {isVisible('createdAt') && (
@@ -241,7 +227,6 @@ export const GroupsOverviewModal: React.FC<GroupsOverviewModalProps> = ({
                                             sortKey="createdAt" 
                                             currentSort={sortConfig} 
                                             onSort={handleSortChange}
-                                            icon={<svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
                                         />
                                     )}
                                     {isVisible('channelCount') && (
@@ -251,7 +236,6 @@ export const GroupsOverviewModal: React.FC<GroupsOverviewModalProps> = ({
                                             currentSort={sortConfig} 
                                             onSort={handleSortChange} 
                                             align="center"
-                                            icon={<svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>}
                                         />
                                     )}
                                 </tr>
@@ -270,35 +254,24 @@ export const GroupsOverviewModal: React.FC<GroupsOverviewModalProps> = ({
                                                     checked={isSelected}
                                                     onChange={() => handleToggleRow(group.id)}
                                                     onClick={(e) => e.stopPropagation()}
-                                                    label={`Select ${group.name}`}
                                                 />
                                             </td>
                                             {isVisible('name') && (
                                                 <td className="px-4 py-2.5 whitespace-nowrap">
                                                     <div className="flex flex-col">
-                                                        <div className="flex items-center gap-2">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-3 h-3 rounded-full flex-shrink-0 shadow-sm" style={{ backgroundColor: group.color || '#4f46e5' }}></div>
                                                             <span 
                                                                 className="text-[13px] font-bold text-gray-200 group-hover:text-indigo-400 transition-colors cursor-pointer leading-snug truncate"
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    onEditGroup(group); // Open GroupSettingsModal to edit
+                                                                    onEditGroup(group);
                                                                 }}
                                                             >
                                                                 {group.name}
                                                             </span>
-                                                            <button 
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    onEditGroup(group); // Open GroupSettingsModal to edit
-                                                                }}
-                                                                className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-white transition-opacity flex-shrink-0"
-                                                                title="Edit Group"
-                                                            >
-                                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                                                            </button>
                                                         </div>
-                                                        {/* Updated opacity and color for better visibility */}
-                                                        <span className="text-[10px] text-gray-400 font-mono mt-0.5 opacity-80">ID: {group.id.slice(0,8)}</span>
+                                                        <span className="text-[10px] text-gray-400 font-mono mt-0.5 opacity-80 pl-6">ID: {group.id.slice(0,8)}</span>
                                                     </div>
                                                 </td>
                                             )}
@@ -331,7 +304,6 @@ export const GroupsOverviewModal: React.FC<GroupsOverviewModalProps> = ({
                     </div>
                 </div>
                 
-                {/* BULK ACTION BAR for Groups */}
                 {selectedGroupIds.length > 0 && (
                     <BulkActionBar 
                         count={selectedGroupIds.length} 

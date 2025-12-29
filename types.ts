@@ -45,30 +45,19 @@ export interface Movie {
   addedAt: string;
   channel3DId: string; // Legacy support
   channel2DId: string; // Legacy support
-  channel3DIds?: string[]; // Multi-tag support
-  channel2DIds?: string[]; // Multi-tag support
+  channel3DIds?: string[]; // Multi-channel support
+  channel2DIds?: string[]; // Multi-channel support
   status: MovieStatus;
   note?: string;
 }
 
-export interface YouTubeData {
-  channelStats: ChannelStats;
-  videos: VideoStat[];
-}
-
-export type SortOrder = 'date' | 'viewCount' | 'likeCount';
-export type SortDirection = 'asc' | 'desc';
-
 export interface ChannelGroup {
-  id:string;
+  id: string;
   name: string;
   channelIds: string[];
   createdAt: string;
+  color?: string; // New: Color for the group dot
 }
-
-export interface ChannelComparisonData extends ChannelStats {}
-
-export type KeyStatus = 'unknown' | 'checking' | 'valid' | 'invalid' | 'quota_exceeded';
 
 export interface ApiKey {
   value: string;
@@ -78,15 +67,24 @@ export interface ApiKey {
   lastUsedDate?: string;
 }
 
-export interface UserProfile {
-  id: string;
-  email: string;
-  full_name: string;
-  role: 'admin' | 'user';
-  avatar_url?: string;
-}
+export type KeyStatus = 'valid' | 'invalid' | 'checking' | 'quota_exceeded' | 'unknown';
 
 export interface AppSettings {
-    refreshInterval: number; // in milliseconds, 0 = off
-    rowsPerPage: number;
+  refreshInterval: number;
+  rowsPerPage: number;
+}
+
+export type SortOrder = 'date' | 'viewCount' | 'likeCount';
+export type SortDirection = 'asc' | 'desc';
+
+export interface UserProfile {
+    id: string;
+    email: string;
+    full_name: string;
+    avatar_url?: string;
+    role: 'admin' | 'user';
+}
+
+export interface ChannelComparisonData extends ChannelStats {
+    // We reuse ChannelStats and can add comparison-specific fields if needed
 }
