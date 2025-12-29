@@ -1,11 +1,13 @@
+
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { createPortal } from 'react-dom'; // Add this import
+import { createPortal } from 'react-dom';
 
 export interface Option {
     id: string;
     label: string;
-    color?: string; // Optional color dot
+    color?: string; // Optional color dot (deprecated in UI but kept in interface for compatibility)
     icon?: React.ReactNode;
+    badge?: string | number; // New field for channel counts or info
 }
 
 interface MultiSelectDropdownProps {
@@ -14,8 +16,9 @@ interface MultiSelectDropdownProps {
     selectedIds: string[];
     onChange: (selectedIds: string[]) => void;
     icon?: React.ReactNode;
-    className?: string; // Added to support custom widths
-    footer?: React.ReactNode; // New prop for custom footer actions
+    className?: string;
+    header?: React.ReactNode | ((close: () => void) => React.ReactNode); // Support render prop
+    footer?: React.ReactNode | ((close: () => void) => React.ReactNode); // Support render prop
 }
 
 export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({ 
@@ -24,32 +27,34 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
     selectedIds, 
     onChange,
     icon,
-    className = "w-full md:w-56", // Default fallback
+    className = "w-full md:w-56",
+    header,
     footer
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const containerRef = useRef<HTMLDivElement>(null); // Ref for the button and its container
+    const containerRef = useRef<HTMLDivElement>(null);
     
-    // New: State and refs for portal positioning
     const [menuPosition, setMenuPosition] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
     const [placement, setPlacement] = useState<'bottom' | 'top'>('bottom');
-    const buttonRef = useRef<HTMLButtonElement>(null); // Ref for the button itself
-    const menuRef = useRef<HTMLDivElement>(null); // Ref for the portal menu container
+    const buttonRef = useRef<HTMLButtonElement>(null);
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    const closeMenu = useCallback(() => {
+        setIsOpen(false);
+        setSearchTerm('');
+    }, []);
 
     const updatePosition = useCallback(() => {
         if (buttonRef.current && isOpen) {
             const rect = buttonRef.current.getBoundingClientRect();
             const spaceBelow = window.innerHeight - rect.bottom;
             const spaceAbove = rect.top;
-            const MENU_MAX_HEIGHT = 280; // Estimate max height of the dropdown list + search/footer
+            const MENU_MAX_HEIGHT = 320; 
 
             let newPlacement: 'bottom' | 'top' = 'bottom';
             if (spaceBelow < MENU_MAX_HEIGHT && spaceAbove > MENU_MAX_HEIGHT) { 
                 newPlacement = 'top';
-            } else if (spaceBelow < MENU_MAX_HEIGHT && spaceAbove < MENU_MAX_HEIGHT) {
-                // If not enough space either side, prioritize bottom, but ensure it's not off-screen
-                newPlacement = 'bottom';
             }
 
             setPlacement(newPlacement);
@@ -57,7 +62,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
                 top: rect.top,
                 left: rect.left,
                 width: rect.width,
-                height: rect.height // Store height explicitly
+                height: rect.height
             });
         }
     }, [isOpen]);
@@ -68,17 +73,12 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
                 containerRef.current && !containerRef.current.contains(event.target as Node) &&
                 menuRef.current && !menuRef.current.contains(event.target as Node)
             ) {
-                setIsOpen(false);
-                setSearchTerm('');
+                closeMenu();
             }
         };
         
-        const handleScroll = () => {
-            if (isOpen) updatePosition();
-        };
-        const handleResize = () => {
-            if (isOpen) updatePosition();
-        };
+        const handleScroll = () => { if (isOpen) updatePosition(); };
+        const handleResize = () => { if (isOpen) updatePosition(); };
 
         if (isOpen) {
             updatePosition();
@@ -92,7 +92,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
             window.removeEventListener('scroll', handleScroll, true);
             window.removeEventListener('resize', handleResize);
         };
-    }, [isOpen, updatePosition]);
+    }, [isOpen, updatePosition, closeMenu]);
 
     const filteredOptions = options.filter(opt => 
         opt.label.toLowerCase().includes(searchTerm.toLowerCase())
@@ -124,12 +124,10 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
                 top: placement === 'bottom' ? (menuPosition?.top ?? 0) + (menuPosition?.height ?? 0) + 8 : 'auto',
                 bottom: placement === 'top' ? (window.innerHeight - (menuPosition?.top ?? 0)) + 8 : 'auto',
                 left: menuPosition?.left ?? 0,
-                width: menuPosition?.width ?? 0,
-                maxHeight: '280px',
-                minWidth: '200px', // Ensure a minimum width for readability
+                width: Math.max(menuPosition?.width ?? 0, 220),
+                maxHeight: '350px',
             }}
         >
-            {/* Search Input */}
             <div className="p-2 border-b border-gray-700">
                 <div className="relative">
                     <svg className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -146,9 +144,13 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
                 </div>
             </div>
 
-            {/* Options List */}
+            {header && (
+                <div className="border-b border-gray-700 bg-gray-900/50">
+                    {typeof header === 'function' ? header(closeMenu) : header}
+                </div>
+            )}
+
             <div className="max-h-60 overflow-y-auto py-1 custom-scrollbar">
-                {/* Select All Option */}
                 {searchTerm === '' && options.length > 0 && (
                     <div 
                         onClick={handleSelectAll}
@@ -173,16 +175,13 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
                                 <div className={`w-4 h-4 rounded border flex items-center justify-center mr-3 transition-colors ${isSelected ? 'bg-indigo-600 border-indigo-600' : 'border-gray-500 group-hover:border-gray-400'}`}>
                                     {isSelected && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                                 </div>
-                                {/* Hiển thị icon của option nếu có */}
-                                {option.icon && (
-                                    <div className="text-gray-500 group-hover:text-white transition-colors mr-2 flex-shrink-0">
-                                        {option.icon}
-                                    </div>
+                                {option.icon && <div className="text-gray-500 group-hover:text-white transition-colors mr-2 flex-shrink-0">{option.icon}</div>}
+                                <span className="text-sm text-gray-300 group-hover:text-white truncate flex-1">{option.label}</span>
+                                {option.badge !== undefined && (
+                                    <span className="ml-2 text-[9px] font-black px-1.5 py-0.5 rounded-md bg-gray-800/80 text-gray-500 group-hover:text-indigo-400 border border-white/5 transition-colors shadow-sm">
+                                        ({option.badge})
+                                    </span>
                                 )}
-                                {option.color && (
-                                    <span className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: option.color }}></span>
-                                )}
-                                <span className="text-sm text-gray-300 group-hover:text-white truncate">{option.label}</span>
                             </div>
                         );
                     })
@@ -191,22 +190,20 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
                 )}
             </div>
 
-            {/* Custom Footer Action */}
             {footer && (
                 <div className="border-t border-gray-700 bg-gray-900/50">
-                    {footer}
+                    {typeof footer === 'function' ? footer(closeMenu) : footer}
                 </div>
             )}
         </div>
     );
 
-
     return (
         <div className={`relative ${className}`} ref={containerRef}>
             <button
-                ref={buttonRef} // Apply ref to the button
+                ref={buttonRef}
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center justify-between w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-sm text-gray-300 hover:bg-gray-800 hover:border-gray-600 transition-colors focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+                className="flex items-center justify-between w-full h-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-sm text-gray-300 hover:bg-gray-800 hover:border-gray-600 transition-colors focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
             >
                 <div className="flex items-center gap-2 truncate">
                     {icon}
@@ -214,7 +211,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
                         {selectedIds.length === 0 
                             ? label 
                             : selectedIds.length === options.length 
-                                ? `All ${label.replace('All ', '')}`
+                                ? `All ${label}`
                                 : `${selectedIds.length} selected`}
                     </span>
                 </div>
@@ -222,8 +219,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                 </svg>
             </button>
-
-            {isOpen && menuPosition && createPortal(menuContent, document.body)} {/* Render using portal */}
+            {isOpen && menuPosition && createPortal(menuContent, document.body)}
         </div>
     );
 };

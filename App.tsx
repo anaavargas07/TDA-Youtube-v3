@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
@@ -209,6 +210,7 @@ const App: React.FC = () => {
                                     setChannelGroups={setChannelGroups} 
                                     setEditingGroup={setEditingGroup} // Pass setEditingGroup
                                     setIsGroupModalOpen={setIsGroupModalOpen} // Pass setIsGroupModalOpen
+                                    onOpenGroupsOverview={() => setIsGroupsOverviewModalOpen(true)} // Pass handler
                                 />
                             )}
                             {currentMainView === 'movies' && (
