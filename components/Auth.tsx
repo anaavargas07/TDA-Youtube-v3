@@ -88,7 +88,7 @@ export const Auth: React.FC<AuthProps> = ({ onClose, showCloseButton = true }) =
                 <div className="flex w-full border-b border-gray-700 mb-6">
                     <button
                         onClick={() => { setActiveTab('signin'); setMessage(null); }}
-                        className={`flex-1 pb-3 text-sm font-semibold transition-all relative ${
+                        className={`flex-1 pb-3 text-sm font-semibold transition-colors relative ${
                             activeTab === 'signin' ? 'text-red-500' : 'text-gray-500 hover:text-gray-300'
                         }`}
                     >
@@ -99,7 +99,7 @@ export const Auth: React.FC<AuthProps> = ({ onClose, showCloseButton = true }) =
                     </button>
                     <button
                         onClick={() => { setActiveTab('signup'); setMessage(null); }}
-                        className={`flex-1 pb-3 text-sm font-semibold transition-all relative ${
+                        className={`flex-1 pb-3 text-sm font-semibold transition-colors relative ${
                             activeTab === 'signup' ? 'text-red-500' : 'text-gray-500 hover:text-gray-300'
                         }`}
                     >
@@ -123,7 +123,7 @@ export const Auth: React.FC<AuthProps> = ({ onClose, showCloseButton = true }) =
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="w-full px-4 py-3 bg-[#334155] border border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500/50 focus:border-red-500 text-white placeholder-gray-500 outline-none text-sm transition-all"
+                            className="w-full px-4 py-3 bg-[#334155] border border-gray-600 rounded-lg focus:ring-1 focus:ring-red-500/30 focus:border-red-500/50 text-white placeholder-gray-500 outline-none text-sm transition-colors duration-200"
                             placeholder="name@example.com"
                             required
                         />
@@ -134,7 +134,7 @@ export const Auth: React.FC<AuthProps> = ({ onClose, showCloseButton = true }) =
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-4 py-3 bg-[#334155] border border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500/50 focus:border-red-500 text-white placeholder-gray-500 outline-none text-sm transition-all"
+                            className="w-full px-4 py-3 bg-[#334155] border border-gray-600 rounded-lg focus:ring-1 focus:ring-red-500/30 focus:border-red-500/50 text-white placeholder-gray-500 outline-none text-sm transition-colors duration-200"
                             placeholder="••••••••"
                             required
                         />

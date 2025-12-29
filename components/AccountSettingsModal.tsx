@@ -97,7 +97,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ isOp
                                     type="text" 
                                     value={fullName}
                                     onChange={e => setFullName(e.target.value)}
-                                    className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none placeholder-gray-600 transition-all"
+                                    className="w-full bg-white/5 border border-white/10 rounded-lg p-2.5 text-sm text-white focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 focus:outline-none placeholder-gray-600 transition-colors duration-200"
                                     placeholder="Enter your name"
                                 />
                             </div>
@@ -114,7 +114,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ isOp
                                     type="password" 
                                     value={newPassword}
                                     onChange={e => setNewPassword(e.target.value)}
-                                    className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                    className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-sm text-white focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 focus:outline-none transition-colors duration-200"
                                     placeholder="Leave blank to keep current"
                                 />
                             </div>
@@ -124,7 +124,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ isOp
                                     type="password" 
                                     value={confirmPassword}
                                     onChange={e => setConfirmPassword(e.target.value)}
-                                    className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                    className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-sm text-white focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 focus:outline-none transition-colors duration-200"
                                     placeholder="Confirm new password"
                                 />
                             </div>

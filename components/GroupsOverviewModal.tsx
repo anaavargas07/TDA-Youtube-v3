@@ -174,7 +174,7 @@ export const GroupsOverviewModal: React.FC<GroupsOverviewModalProps> = ({
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     placeholder="Search groups..."
-                                    className="w-full h-full pl-11 pr-4 bg-gray-900 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all text-sm font-medium"
+                                    className="w-full h-full pl-11 pr-4 bg-gray-900 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-colors duration-200 text-sm font-medium outline-none"
                                 />
                             </div>
 

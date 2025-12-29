@@ -48,7 +48,7 @@ export const AddMovieModal: React.FC<AddMovieModalProps> = ({ isOpen, onClose, o
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
                         placeholder="Movie Name 1&#10;Movie Name 2&#10;Movie Name 3..."
-                        className="w-full p-4 bg-gray-800 border border-gray-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-white placeholder-gray-600 resize-none transition-all"
+                        className="w-full p-4 bg-gray-800 border border-gray-700 rounded-xl focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 text-white placeholder-gray-600 resize-none transition-colors duration-200 outline-none"
                     />
                     <div className="flex justify-end gap-3 pt-2">
                         <button onClick={onClose} className="px-6 py-2.5 rounded-xl text-sm font-bold text-gray-400 hover:text-white transition-all">Cancel</button>

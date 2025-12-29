@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { SearchableSelect } from './SearchableSelect';
 import { MultiSelectDropdown, Option as MultiOption } from './MultiSelectDropdown';
@@ -57,7 +58,7 @@ const NoteInput: React.FC<{ initialValue: string, onSave: (val: string) => void 
             onKeyDown={handleKeyDown} 
             onClick={(e) => e.stopPropagation()} 
             placeholder="Add a note..."
-            className="w-full bg-transparent border border-transparent hover:border-white/10 focus:border-indigo-500 rounded px-2 py-1 text-xs text-gray-300 focus:text-white placeholder-gray-600 focus:outline-none transition-all"
+            className="w-full bg-transparent border border-transparent hover:border-white/10 focus:border-indigo-500/50 rounded px-2 py-1 text-xs text-gray-300 focus:text-white placeholder-gray-600 outline-none transition-colors duration-200"
         />
     );
 };
@@ -291,7 +292,7 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Search by movie name..."
-                            className="w-full h-full pl-11 pr-4 bg-gray-900 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-all text-sm font-medium"
+                            className="w-full h-full pl-11 pr-4 bg-gray-900 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-colors duration-200 text-sm font-medium outline-none"
                         />
                     </div>
                     <MultiSelectDropdown 
