@@ -1,9 +1,10 @@
+
 import React, { useState } from 'react';
 import type { ChannelStats } from '../types';
 import { formatNumber, formatRelativeTime } from '../utils/helpers';
 import { MiniVideoDisplay } from './MiniVideoDisplay';
-import { CircularCheckbox } from './CircularCheckbox'; // Import from new file
-import { SortableHeader } from './SortableHeader'; // Import from new file
+import { CircularCheckbox } from './CircularCheckbox'; 
+import { SortableHeader } from './SortableHeader'; 
 
 interface ChannelTableProps {
     channels: ChannelStats[];
@@ -38,7 +39,7 @@ const ModernStat: React.FC<{ value: number, max: number, label: string, gradient
 const ChannelIdDisplay: React.FC<{ id: string }> = ({ id }) => {
     const [copied, setCopied] = useState(false);
     const copyId = (e: React.MouseEvent) => {
-        e.stopPropagation(); // Prevent row selection
+        e.stopPropagation(); 
         navigator.clipboard.writeText(id);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
@@ -102,10 +103,10 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
 
     return (
         <div className="overflow-x-auto bg-gray-800/40 rounded-xl shadow-xl border border-gray-700/50 font-sans">
-            <table className="min-w-full divide-y divide-gray-700/50 table-fixed">
-                <thead className="bg-gray-900/50">
+            <table className="min-w-full border-separate border-spacing-0 table-fixed">
+                <thead className="bg-[#111927]">
                     <tr>
-                        <th className="px-4 py-3 w-12 text-center sticky left-0 z-10 bg-inherit shadow-[4px_0_10px_rgba(0,0,0,0.2)]">
+                        <th className="px-4 py-3 w-12 text-center sticky left-0 z-10 bg-[#111927] border-b border-gray-700/50 shadow-[4px_0_10px_rgba(0,0,0,0.2)]">
                             <CircularCheckbox checked={isAllSelected} onChange={onToggleAll} label="Select all channels" />
                         </th>
                         {isVisible('title') && (
@@ -114,7 +115,7 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                 sortKey="title" 
                                 currentSort={sortConfig} 
                                 onSort={onSortChange} 
-                                className="w-1/5"
+                                className="w-1/5 border-b border-gray-700/50"
                                 icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
                             />
                         )}
@@ -124,6 +125,7 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                 sortKey="publishedAt" 
                                 currentSort={sortConfig} 
                                 onSort={onSortChange}
+                                className="border-b border-gray-700/50"
                                 icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
                             />
                         )}
@@ -133,7 +135,7 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                 sortKey="subscriberCount" 
                                 currentSort={sortConfig} 
                                 onSort={onSortChange} 
-                                className="w-[130px]"
+                                className="w-[130px] border-b border-gray-700/50"
                                 icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>}
                             />
                         )}
@@ -143,7 +145,7 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                 sortKey="viewCount" 
                                 currentSort={sortConfig} 
                                 onSort={onSortChange} 
-                                className="w-[130px]"
+                                className="w-[130px] border-b border-gray-700/50"
                                 icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>}
                             />
                         )}
@@ -153,7 +155,7 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                 sortKey="videoCount" 
                                 currentSort={sortConfig} 
                                 onSort={onSortChange} 
-                                className="w-[130px]"
+                                className="w-[130px] border-b border-gray-700/50"
                                 icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" /></svg>}
                             />
                         )}
@@ -163,7 +165,7 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                 sortKey="newestVideoDate" 
                                 currentSort={sortConfig} 
                                 onSort={onSortChange} 
-                                className="w-1/6"
+                                className="w-1/6 border-b border-gray-700/50"
                                 icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0118 0Z" /></svg>}
                             />
                         )}
@@ -173,13 +175,13 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                 sortKey="oldestVideoDate" 
                                 currentSort={sortConfig} 
                                 onSort={onSortChange} 
-                                className="w-1/6"
+                                className="w-1/6 border-b border-gray-700/50"
                                 icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0118 0Z" /></svg>}
                             />
                         )}
                     </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-700/50">
+                <tbody className="bg-transparent">
                     {channels.map((channel) => {
                         const isTerminated = channel.status === 'terminated';
                         const isSelected = selectedIds.includes(channel.id);
@@ -198,7 +200,7 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                     }
                                 }}
                             >
-                                <td className="px-4 py-2.5 whitespace-nowrap sticky left-0 z-10 bg-inherit">
+                                <td className="px-4 py-2.5 whitespace-nowrap sticky left-0 z-10 bg-[#0f172a] border-b border-gray-700/50">
                                     <CircularCheckbox 
                                         checked={isSelected} 
                                         onChange={() => onToggleRow(channel.id)} 
@@ -207,7 +209,7 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                     />
                                 </td>
                                 {isVisible('title') && (
-                                    <td className="px-4 py-2.5 whitespace-nowrap">
+                                    <td className="px-4 py-2.5 whitespace-nowrap border-b border-gray-700/50">
                                         <div className="flex items-center">
                                             <div 
                                                 className="flex-shrink-0 h-10 w-10 relative cursor-pointer group/avatar no-row-click click-navigate"
@@ -244,7 +246,7 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                     </td>
                                 )}
                                 {isVisible('publishedAt') && (
-                                    <td className="px-4 py-2.5 whitespace-nowrap">
+                                    <td className="px-4 py-2.5 whitespace-nowrap border-b border-gray-700/50">
                                         <div className="flex flex-col text-center">
                                             <span className="text-[10px] font-medium text-gray-300">{new Date(channel.publishedAt).toLocaleDateString()}</span>
                                             <span className="text-[8px] font-normal text-gray-500 opacity-80">{new Date(channel.publishedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
@@ -252,7 +254,7 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                     </td>
                                 )}
                                 {isVisible('subscriberCount') && (
-                                    <td className="px-4 py-2.5 align-middle">
+                                    <td className="px-4 py-2.5 align-middle border-b border-gray-700/50">
                                         <ModernStat 
                                             value={parseInt(channel.subscriberCount, 10)} 
                                             max={maxValues.subs} 
@@ -263,7 +265,7 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                     </td>
                                 )}
                                 {isVisible('viewCount') && (
-                                    <td className="px-4 py-2.5 align-middle">
+                                    <td className="px-4 py-2.5 align-middle border-b border-gray-700/50">
                                         <ModernStat 
                                             value={parseInt(channel.viewCount, 10) || 0} 
                                             max={maxValues.views} 
@@ -274,7 +276,7 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                     </td>
                                 )}
                                 {isVisible('videoCount') && (
-                                     <td className="px-4 py-2.5 align-middle">
+                                     <td className="px-4 py-2.5 align-middle border-b border-gray-700/50">
                                         <ModernStat 
                                             value={parseInt(channel.videoCount, 10) || 0} 
                                             max={maxValues.videos} 
@@ -285,12 +287,12 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                     </td>
                                 )}
                                 {isVisible('newestVideo') && (
-                                    <td className="px-4 py-2.5 align-middle">
+                                    <td className="px-4 py-2.5 align-middle border-b border-gray-700/50">
                                         {isTerminated ? <span className="text-xs text-red-500 italic">Unavailable</span> : <MiniVideoDisplay video={channel.newestVideo} type="Newest" />}
                                     </td>
                                 )}
                                 {isVisible('oldestVideo') && (
-                                    <td className="px-4 py-2.5 align-middle">
+                                    <td className="px-4 py-2.5 align-middle border-b border-gray-700/50">
                                         {isTerminated ? <span className="text-xs text-red-500 italic">Unavailable</span> : <MiniVideoDisplay video={channel.oldestVideo} type="Oldest" />}
                                     </td>
                                 )}
