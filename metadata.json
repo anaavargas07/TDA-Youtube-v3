@@ -1,0 +1,5 @@
+{
+  "name": "YouTube Channel Dashboard",
+  "description": "An application to view the latest video statistics from any YouTube channel.",
+  "requestFramePermissions": []
+}
