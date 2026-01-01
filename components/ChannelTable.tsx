@@ -103,10 +103,10 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
 
     return (
         <div className="overflow-x-auto bg-gray-800/40 rounded-xl shadow-xl border border-gray-700/50 font-sans">
-            <table className="min-w-full border-separate border-spacing-0 table-fixed">
-                <thead className="bg-[#111927]">
+            <table className="min-w-full border-separate border-spacing-0 table-fixed border-collapse">
+                <thead className="bg-gray-900/50">
                     <tr>
-                        <th className="px-4 py-3 w-12 text-center sticky left-0 z-10 bg-[#111927] border-b border-gray-700/50 shadow-[4px_0_10px_rgba(0,0,0,0.2)]">
+                        <th className="px-4 py-3 w-12 text-center sticky left-0 z-10 bg-inherit border-b border-gray-700/50">
                             <CircularCheckbox checked={isAllSelected} onChange={onToggleAll} label="Select all channels" />
                         </th>
                         {isVisible('title') && (
@@ -200,7 +200,7 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                     }
                                 }}
                             >
-                                <td className="px-4 py-2.5 whitespace-nowrap sticky left-0 z-10 bg-[#0f172a] border-b border-gray-700/50">
+                                <td className="px-4 py-2.5 whitespace-nowrap sticky left-0 z-10 bg-inherit border-b border-gray-700/50">
                                     <CircularCheckbox 
                                         checked={isSelected} 
                                         onChange={() => onToggleRow(channel.id)} 
