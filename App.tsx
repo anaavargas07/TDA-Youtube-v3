@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { SettingsModal } from './components/SettingsModal';
@@ -85,6 +85,14 @@ const App: React.FC = () => {
     
     const apiKeySet = apiKeys.some(k => k.status === 'valid');
     const dailyQuotaLimit = apiKeys.filter(k => k.status === 'valid').length > 0 ? apiKeys.filter(k => k.status === 'valid').length * 10000 : 10000;
+
+    // Tính toán thời gian cập nhật gần nhất toàn cục
+    const lastGlobalRefresh = useMemo(() => {
+        if (trackedChannels.length === 0) return undefined;
+        const timestamps = trackedChannels.map(c => c.lastRefreshedAt || 0);
+        const maxTs = Math.max(...timestamps);
+        return maxTs > 0 ? maxTs : undefined;
+    }, [trackedChannels]);
 
     useEffect(() => {
         localStorage.setItem('infi_app_settings', JSON.stringify(appSettings));
@@ -175,18 +183,17 @@ const App: React.FC = () => {
                     onOpenSettings={() => setIsSettingsOpen(true)} 
                     onOpenAccount={() => setIsAccountOpen(true)} 
                     profile={profile}
-                    currentView={currentMainView} // Use currentMainView
-                    onViewChange={setCurrentMainView} // Set currentMainView
-                    // currentSubView is no longer passed to Header as GroupsOverview is a modal
-                    // onSubViewChange is no longer passed to Header
-                    lastViewedChannelId={recentlyViewedIds[0]} // Pass the most recently viewed channel ID
-                    onViewSpecificChannel={handleSelectChannel} // Pass the handler to view a specific channel
-                    trackedChannels={trackedChannels} // Pass trackedChannels for "Channel Details" fallback logic
-                    onOpenGroupsOverview={() => setIsGroupsOverviewModalOpen(true)} // New: Open GroupsOverviewModal
+                    currentView={currentMainView} 
+                    onViewChange={setCurrentMainView} 
+                    lastViewedChannelId={recentlyViewedIds[0]} 
+                    onViewSpecificChannel={handleSelectChannel} 
+                    trackedChannels={trackedChannels} 
+                    onOpenGroupsOverview={() => setIsGroupsOverviewModalOpen(true)} 
                     showNavigation={true}
                     minimal={false}
                     onRefresh={handleRefreshChannels}
                     isRefreshing={isRefreshing}
+                    lastRefreshedAt={lastGlobalRefresh}
                 />
                 
                 <main className="w-full px-4 md:px-8 py-8 flex flex-col items-center space-y-8">
@@ -195,7 +202,7 @@ const App: React.FC = () => {
                         <>
                             {currentMainView === 'channels' && (
                                 <ChannelsView
-                                    currentSubView={currentChannelsSubView} // Now always 'allChannels' for ChannelsView itself
+                                    currentSubView={currentChannelsSubView} 
                                     trackedChannels={trackedChannels}
                                     channelGroups={channelGroups}
                                     onAddChannel={handleAddChannel}
@@ -206,24 +213,23 @@ const App: React.FC = () => {
                                     isAdding={isAddingChannel}
                                     apiKeySet={apiKeySet}
                                     settings={appSettings}
-                                    // Pass setters for channelGroups to allow creation/deletion within ChannelsView
                                     setChannelGroups={setChannelGroups} 
-                                    setEditingGroup={setEditingGroup} // Pass setEditingGroup
-                                    setIsGroupModalOpen={setIsGroupModalOpen} // Pass setIsGroupModalOpen
-                                    onOpenGroupsOverview={() => setIsGroupsOverviewModalOpen(true)} // Pass handler
+                                    setEditingGroup={setEditingGroup} 
+                                    setIsGroupModalOpen={setIsGroupModalOpen} 
+                                    onOpenGroupsOverview={() => setIsGroupsOverviewModalOpen(true)} 
                                 />
                             )}
                             {currentMainView === 'movies' && (
                                 <MoviesView 
                                     movies={movies}
-                                    channels={trackedChannels} // Pass trackedChannels for channel options
+                                    channels={trackedChannels} 
                                     onAddMovies={handleAddMovies}
                                     onUpdateMovie={handleUpdateMovie}
                                     onBulkUpdateMovieStatus={handleBulkUpdateMovieStatus}
-                                    onSortChange={(val) => {}} // Dummy as sort is internal
+                                    onSortChange={(val) => {}} 
                                     onDeleteMovie={handleDeleteMovie}
                                     settings={appSettings}
-                                    setMovies={setMovies} // Pass setMovies for internal state updates
+                                    setMovies={setMovies} 
                                 />
                             )}
                         </>
@@ -314,7 +320,6 @@ const App: React.FC = () => {
                         />
                     )}
 
-                    {/* New: GroupsOverviewModal */}
                     <GroupsOverviewModal 
                         isOpen={isGroupsOverviewModalOpen}
                         onClose={() => setIsGroupsOverviewModalOpen(false)}
@@ -339,5 +344,4 @@ const App: React.FC = () => {
     );
 };
 
-// FIX: Export the App component as a default export
 export default App;

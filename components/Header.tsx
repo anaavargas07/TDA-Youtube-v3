@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useMemo } from 'react';
 import { UserProfile, ChannelStats } from '../types';
+import { formatRelativeTime } from '../utils/helpers';
 
 interface HeaderProps {
     onOpenSettings: () => void;
@@ -16,6 +17,7 @@ interface HeaderProps {
     minimal?: boolean;
     onRefresh: () => void;
     isRefreshing: boolean;
+    lastRefreshedAt?: number;
 }
 
 const YouTubeLogo = () => (
@@ -43,7 +45,8 @@ export const Header: React.FC<HeaderProps> = ({
     showNavigation = true,
     minimal = false,
     onRefresh,
-    isRefreshing
+    isRefreshing,
+    lastRefreshedAt
 }) => {
     const [isChannelsDropdownOpen, setIsChannelsDropdownOpen] = useState(false);
     const dropdownTimeoutRef = useRef<number | null>(null);
@@ -117,7 +120,7 @@ export const Header: React.FC<HeaderProps> = ({
     };
 
     const handleMouseLeave = () => {
-        dropdownTimeoutRef.current = setTimeout(() => {
+        dropdownTimeoutRef.current = window.setTimeout(() => {
             setIsChannelsDropdownOpen(false);
             dropdownTimeoutRef.current = null;
         }, 200);
@@ -127,7 +130,7 @@ export const Header: React.FC<HeaderProps> = ({
       <header className={`sticky z-30 bg-[#0f172a]/95 backdrop-blur-md border-b border-gray-800 shadow-lg transition-all ${minimal ? 'top-0' : 'top-8'}`}>
         <div className="w-full px-6 h-16 flex justify-between items-center">
           
-          {/* Left: Navigation Pills - Force aligned to left edge */}
+          {/* Left: Navigation Pills */}
           <div className="flex-1 flex items-center justify-start">
              {!minimal && showNavigation && (
                 <nav className="flex items-center gap-1 bg-gray-800/50 p-1 rounded-full border border-gray-700/50 shadow-inner">
@@ -204,7 +207,7 @@ export const Header: React.FC<HeaderProps> = ({
              )}
           </div>
 
-          {/* Center: Logo - Perfectly centered in the viewport */}
+          {/* Center: Logo */}
           <div className="flex-1 flex justify-center items-center gap-2 pointer-events-none">
             <div className="pointer-events-auto flex items-center gap-2">
                 <YouTubeLogo />
@@ -214,15 +217,22 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
           
-          {/* Right: User Profile & Settings - Force aligned to right edge */}
-          <div className="flex-1 flex justify-end items-center gap-4">
+          {/* Right: User Profile & Settings */}
+          <div className="flex-1 flex justify-end items-center gap-2 sm:gap-4">
             {!minimal && (
                 <>
+                    <div className="flex flex-col items-end mr-1 hidden md:flex">
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter leading-none mb-1">Last Synced</span>
+                        <span className="text-[11px] font-medium text-indigo-400/80 leading-none">
+                            {lastRefreshedAt ? formatRelativeTime(new Date(lastRefreshedAt).toISOString()) : 'Never'}
+                        </span>
+                    </div>
+
                     <button 
                         onClick={onRefresh} 
                         disabled={isRefreshing}
                         className={`
-                            p-2 rounded-full hover:bg-gray-800 transition-all duration-300
+                            p-2 rounded-full hover:bg-gray-800 transition-all duration-300 relative
                             ${isRefreshing ? 'text-indigo-400 cursor-not-allowed' : 'text-gray-400 hover:text-white'}
                         `}
                         title="Sync Latest Data"
@@ -241,7 +251,7 @@ export const Header: React.FC<HeaderProps> = ({
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
                     </button>
 
