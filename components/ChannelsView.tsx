@@ -171,6 +171,7 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
                     e.stopPropagation();
                     setEditingGroup(null);
                     setIsGroupModalOpen(true);
+                    close(); // Ẩn dropdown sau khi nhấn
                 }}
                 className="flex-1 flex items-center justify-center gap-2 py-3 text-[11px] font-bold text-indigo-400 hover:text-indigo-300 hover:bg-white/5 transition-all"
             >
@@ -182,10 +183,11 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
                 onClick={(e) => {
                     e.stopPropagation();
                     onOpenGroupsOverview();
+                    close(); // Ẩn dropdown sau khi nhấn
                 }}
                 className="flex-1 flex items-center justify-center gap-2 py-3 text-[11px] font-bold text-emerald-400 hover:text-emerald-300 hover:bg-white/5 transition-all"
             >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                 Manage ({channelGroups.length})
             </button>
         </div>
@@ -217,7 +219,7 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
                     />
                     <button onClick={() => setIsAddModalOpen(true)} className="h-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-6 rounded-xl transition-all flex items-center justify-center gap-2 whitespace-nowrap border border-indigo-500 shadow-lg shadow-indigo-500/20 active:scale-95">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
                         </svg>
                         Add Channel
                     </button>
@@ -258,7 +260,9 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
                 <BulkActionBar count={selectedChannelIds.length} onClear={() => setSelectedChannelIds([])} onDelete={() => setIsDeleteModalOpen(true)}>
                     <div className="relative">
                         <button onClick={() => { setActiveBulkMenu(activeBulkMenu === 'group' ? null : 'group'); setBulkSearchTerm(''); setPendingBulkValues([]); }} className={`flex items-center gap-2 transition-all hover:scale-105 ${activeBulkMenu === 'group' ? 'text-indigo-400' : 'text-gray-300 hover:text-white'}`}>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+                            </svg>
                             <span className="text-sm font-bold">Add Group</span>
                         </button>
                         {activeBulkMenu === 'group' && (
@@ -294,7 +298,9 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
                                         }}
                                         className="w-full flex items-center justify-center gap-2 py-2 text-[10px] font-bold text-indigo-400 hover:text-indigo-300 hover:bg-white/5 transition-all"
                                     >
-                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+                                        </svg>
                                         Create Group
                                     </button>
                                 </div>

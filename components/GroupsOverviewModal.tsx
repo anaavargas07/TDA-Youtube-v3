@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { GroupSummaryCards } from './GroupSummaryCards';
 import { MultiSelectDropdown, Option } from './MultiSelectDropdown';
@@ -83,19 +82,25 @@ export const GroupsOverviewModal: React.FC<GroupsOverviewModalProps> = ({
             return matchesSearch && matchesTime;
         });
 
+        // Fixed sort logic to correctly handle the 'channelCount' virtual key and nested group properties.
         result.sort((a, b) => {
-            let valA: any = a[sortConfig.key];
-            let valB: any = b[sortConfig.key];
+            let valA: any;
+            let valB: any;
+
+            if (sortConfig.key === 'channelCount') {
+                valA = a.channelIds.length;
+                valB = b.channelIds.length;
+            } else {
+                valA = a[sortConfig.key as keyof ChannelGroup];
+                valB = b[sortConfig.key as keyof ChannelGroup];
+            }
 
             if (sortConfig.key === 'createdAt') {
                 valA = new Date(valA).getTime();
                 valB = new Date(valB).getTime();
-            } else if (sortConfig.key === 'channelCount') {
-                valA = a.channelIds.length;
-                valB = b.channelIds.length;
             } else if (typeof valA === 'string') {
                 valA = valA.toLowerCase();
-                valB = valB.toLowerCase();
+                valB = (valB as string).toLowerCase();
             }
 
             if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
@@ -184,6 +189,7 @@ export const GroupsOverviewModal: React.FC<GroupsOverviewModalProps> = ({
                                 selectedIds={visibleColumns}
                                 onChange={setVisibleColumns}
                                 className="w-40 h-full"
+                                icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 4.5v15m6-15v15m-10.875 0h15.75c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H4.125C3.504 4.5 3 5.004 3 5.625v12.75c0 .621.504 1.125 1.125 1.125Z" /></svg>}
                             />
 
                             <button
@@ -191,7 +197,7 @@ export const GroupsOverviewModal: React.FC<GroupsOverviewModalProps> = ({
                                 className="h-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-6 rounded-xl transition-all flex items-center justify-center gap-2 whitespace-nowrap border border-indigo-500 shadow-lg shadow-indigo-500/20 active:scale-95"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
                                 </svg>
                                 Add Group
                             </button>
