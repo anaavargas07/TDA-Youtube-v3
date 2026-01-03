@@ -60,10 +60,11 @@ export const useAppData = (session: any) => {
                     thumbnailUrl: c.thumbnail_url, subscriberCount: c.subscriber_count, videoCount: c.video_count,
                     viewCount: c.view_count, publishedAt: c.published_at, uploadsPlaylistId: c.uploads_playlist_id,
                     history: c.history || [], status: c.status as any, addedAt: new Date(c.added_at).getTime(),
-                    newestVideo: c.newest_video, oldest_video: c.oldest_video,
+                    // Fix: Map c.oldest_video to oldestVideo property (camelCase)
+                    newestVideo: c.newest_video, oldestVideo: c.oldest_video,
                     lastRefreshedAt: c.last_refreshed_at ? new Date(c.last_refreshed_at).getTime() : undefined,
-                    engagementStatus: c.engagement_status || 'good',
-                    monetizationStatus: c.monetization_status || 'not_monetized'
+                    engagementStatus: c.engagement_status || 'undecided',
+                    monetizationStatus: c.monetization_status || 'undecided'
                   })));
                 }
                 
@@ -178,6 +179,7 @@ export const useAppData = (session: any) => {
                 const stats = await getChannelStats(channelId);
                 const today = getTodaysDateString();
                 const dbChannel = { 
+                    // Fix: Use camelCase properties from stats (ChannelStats object)
                     id: stats.id, user_id: session.user.id, title: stats.title, 
                     description: stats.description, custom_url: stats.customUrl, 
                     thumbnail_url: stats.thumbnailUrl, subscriber_count: stats.subscriberCount, 
@@ -185,14 +187,15 @@ export const useAppData = (session: any) => {
                     uploads_playlist_id: stats.uploadsPlaylistId, 
                     history: [{ date: today, timestamp: Date.now(), subscriberCount: stats.subscriberCount, viewCount: stats.viewCount, videoCount: stats.videoCount }], 
                     status: stats.status || 'active', published_at: stats.publishedAt, 
+                    // Fix: stats.newest_video should be stats.newestVideo (camelCase)
                     newest_video: stats.newestVideo, oldest_video: stats.oldestVideo,
                     added_at: new Date().toISOString(),
-                    monetization_status: 'not_monetized',
-                    engagement_status: 'good'
+                    monetization_status: 'undecided',
+                    engagement_status: 'undecided'
                 };
                 
                 await supabase.from('tracked_channels').upsert(dbChannel);
-                const newChan = { ...stats, history: dbChannel.history, addedAt: Date.now(), monetizationStatus: 'not_monetized' as MonetizationStatus, engagementStatus: 'good' as EngagementStatus };
+                const newChan = { ...stats, history: dbChannel.history, addedAt: Date.now(), monetizationStatus: 'undecided' as MonetizationStatus, engagementStatus: 'undecided' as EngagementStatus };
                 setTrackedChannels(prev => [...prev, newChan]);
                 results.push({ identifier, status: 'success', channelTitle: stats.title });
             } catch (err: any) { 
@@ -246,6 +249,7 @@ export const useAppData = (session: any) => {
         try {
             setMovies(prev => [...newMovies, ...prev]);
             await supabase.from('movies').insert(newMovies.map(m => ({
+                // Fix: added_at should map to m.addedAt (m is of type Movie)
                 id: m.id, user_id: session.user.id, name: m.name, added_at: m.addedAt, status: m.status, note: m.note,
                 channel_3_ids: m.channel3DIds, channel_2_ids: m.channel2DIds
             })));

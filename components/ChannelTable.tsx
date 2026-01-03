@@ -22,6 +22,7 @@ interface ChannelTableProps {
 }
 
 export const MONETIZATION_OPTIONS: { id: MonetizationStatus; label: string; colorClass: string }[] = [
+    { id: 'undecided', label: '❓ Undefined', colorClass: 'text-gray-500 bg-gray-500/10 border-gray-500/20' },
     { id: 'not_monetized', label: '🚫 Not Monetized', colorClass: 'text-gray-400 bg-gray-400/10 border-gray-400/20' },
     { id: 'monetized', label: '💲 Monetized', colorClass: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' },
     { id: 'demonetized', label: '❌ Demonetized', colorClass: 'text-red-400 bg-red-400/10 border-red-400/20' },
@@ -30,6 +31,7 @@ export const MONETIZATION_OPTIONS: { id: MonetizationStatus; label: string; colo
 ];
 
 export const ENGAGEMENT_OPTIONS: { id: EngagementStatus; label: string; colorClass: string }[] = [
+    { id: 'undecided', label: '❓ Undefined', colorClass: 'text-gray-500 bg-gray-500/10 border-gray-500/20' },
     { id: 'good', label: '🔥 Good', colorClass: 'text-orange-400 bg-orange-400/10 border-orange-400/20' },
     { id: 'decreased', label: '📉 Decreased', colorClass: 'text-red-400 bg-red-400/10 border-red-400/20' },
     { id: 'pause', label: '⏸️ Pause', colorClass: 'text-gray-400 bg-gray-400/10 border-gray-400/20' },
@@ -270,7 +272,7 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                     <td className="px-4 py-2.5 text-center border-b border-gray-700/50 no-row-click">
                                         <div className="flex justify-center w-full">
                                             <SearchableSelect 
-                                                value={channel.monetizationStatus || 'not_monetized'}
+                                                value={channel.monetizationStatus || 'undecided'}
                                                 options={MONETIZATION_OPTIONS}
                                                 onChange={(val) => onUpdateChannel(channel.id, { monetizationStatus: val as MonetizationStatus })}
                                                 className="w-[150px]"
@@ -282,7 +284,7 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                     <td className="px-4 py-2.5 text-center border-b border-gray-700/50 no-row-click">
                                         <div className="flex justify-center w-full">
                                             <SearchableSelect 
-                                                value={channel.engagementStatus || 'good'}
+                                                value={channel.engagementStatus || 'undecided'}
                                                 options={ENGAGEMENT_OPTIONS}
                                                 onChange={(val) => onUpdateChannel(channel.id, { engagementStatus: val as EngagementStatus })}
                                                 className="w-[130px]"

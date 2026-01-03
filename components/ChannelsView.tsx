@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { ChannelTable, MONETIZATION_OPTIONS, ENGAGEMENT_OPTIONS } from './ChannelTable';
 import { MultiSelectDropdown, Option } from './MultiSelectDropdown';
@@ -106,20 +107,43 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
         return () => window.removeEventListener('keydown', handleEsc);
     }, [activeBulkMenu, selectedChannelIds]);
 
-    const groupOptions: Option[] = useMemo(() => channelGroups.map(g => ({ 
-        id: g.id, label: g.name, badge: g.channelIds.length
-    })), [channelGroups]);
+    const groupOptions: Option[] = useMemo(() => {
+        const options = channelGroups.map(g => ({ 
+            id: g.id, label: g.name, badge: g.channelIds.length
+        }));
+
+        // Tìm các kênh chưa thuộc bất kỳ nhóm nào
+        const allGroupedIds = new Set(channelGroups.flatMap(g => g.channelIds));
+        const uncategorizedCount = trackedChannels.filter(c => !allGroupedIds.has(c.id)).length;
+
+        if (uncategorizedCount > 0) {
+            options.unshift({
+                id: '__uncategorized__',
+                label: '❓ Undefined',
+                badge: uncategorizedCount
+            });
+        }
+
+        return options;
+    }, [channelGroups, trackedChannels]);
 
     const filteredAndSortedChannels = useMemo(() => {
         let result = trackedChannels.filter(channel => {
             const matchesSearch = channel.title.toLowerCase().includes(channelSearchQuery.toLowerCase()) || channel.id.includes(channelSearchQuery);
-            const matchesGroup = selectedGroupFilterIds.length === 0 || channelGroups.some(g => selectedGroupFilterIds.includes(g.id) && g.channelIds.includes(channel.id));
+            
+            // Logic lọc nhóm mới
+            let matchesGroup = selectedGroupFilterIds.length === 0;
+            if (!matchesGroup) {
+                const isInSelectedGroup = channelGroups.some(g => selectedGroupFilterIds.includes(g.id) && g.channelIds.includes(channel.id));
+                const isUncategorizedAndSelected = selectedGroupFilterIds.includes('__uncategorized__') && !channelGroups.some(g => g.channelIds.includes(channel.id));
+                matchesGroup = isInSelectedGroup || isUncategorizedAndSelected;
+            }
             
             const matchesMonetized = selectedMonetizedFilters.length === 0 || 
-                selectedMonetizedFilters.includes(channel.monetizationStatus || 'not_monetized');
+                selectedMonetizedFilters.includes(channel.monetizationStatus || 'undecided');
 
             const matchesEngagement = selectedEngagementFilters.length === 0 || 
-                selectedEngagementFilters.includes(channel.engagementStatus || 'good');
+                selectedEngagementFilters.includes(channel.engagementStatus || 'undecided');
 
             return matchesSearch && matchesGroup && matchesMonetized && matchesEngagement;
         });
@@ -160,20 +184,16 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
 
     const commitBulkAction = async () => {
         if (activeBulkMenu === 'group') {
-            // Duyệt qua tất cả các group hiện có
             channelGroups.forEach(group => {
                 const isGroupInPendingList = pendingBulkValues.includes(group.id);
                 let updatedChannelIds = [...group.channelIds];
 
                 if (isGroupInPendingList) {
-                    // Nếu group này được chọn: Thêm tất cả selectedChannelIds vào group (nếu chưa có)
                     updatedChannelIds = Array.from(new Set([...updatedChannelIds, ...selectedChannelIds]));
                 } else {
-                    // Nếu group này không được chọn: Loại bỏ tất cả selectedChannelIds ra khỏi group này (unadd)
                     updatedChannelIds = updatedChannelIds.filter(id => !selectedChannelIds.includes(id));
                 }
 
-                // Chỉ gọi API nếu mảng ID thực sự có thay đổi
                 if (JSON.stringify(updatedChannelIds) !== JSON.stringify(group.channelIds)) {
                     onSaveGroup({ ...group, channelIds: updatedChannelIds });
                 }
@@ -202,9 +222,7 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
         }
     };
 
-    // Hàm tiện ích để khởi tạo danh sách group đang được add cho các channel đang chọn
     const openBulkGroupMenu = () => {
-        // Tìm các group có chứa ít nhất 1 channel trong số các channel đang chọn
         const initiallySelectedGroups = channelGroups
             .filter(g => g.channelIds.some(cid => selectedChannelIds.includes(cid)))
             .map(g => g.id);
@@ -219,7 +237,7 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
                 <div className="flex flex-row gap-4 items-center h-11">
                     <div className="relative flex-grow h-full">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500">
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                         </div>
                         <input 
                             type="text" 
@@ -259,7 +277,7 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
                         label="Monetized" 
                         options={MONETIZATION_OPTIONS.map(opt => ({ 
                             id: opt.id, label: opt.label, 
-                            badge: trackedChannels.filter(c => (c.monetizationStatus || 'not_monetized') === opt.id).length 
+                            badge: trackedChannels.filter(c => (c.monetizationStatus || 'undecided') === opt.id).length 
                         }))} 
                         selectedIds={selectedMonetizedFilters} 
                         onChange={setSelectedMonetizedFilters} 
@@ -272,7 +290,7 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
                         label="Engagement" 
                         options={ENGAGEMENT_OPTIONS.map(opt => ({ 
                             id: opt.id, label: opt.label,
-                            badge: trackedChannels.filter(c => (c.engagementStatus || 'good') === opt.id).length 
+                            badge: trackedChannels.filter(c => (c.engagementStatus || 'undecided') === opt.id).length 
                         }))} 
                         selectedIds={selectedEngagementFilters} 
                         onChange={setSelectedEngagementFilters} 

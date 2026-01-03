@@ -18,8 +18,8 @@ export interface VideoStat {
   commentCount: string;
 }
 
-export type MonetizationStatus = 'not_monetized' | 'monetized' | 'demonetized' | 'policy_violation' | 'on_hold';
-export type EngagementStatus = 'good' | 'decreased' | 'pause';
+export type MonetizationStatus = 'undecided' | 'not_monetized' | 'monetized' | 'demonetized' | 'policy_violation' | 'on_hold';
+export type EngagementStatus = 'undecided' | 'good' | 'decreased' | 'pause';
 
 export interface ChannelStats {
   id: string;
