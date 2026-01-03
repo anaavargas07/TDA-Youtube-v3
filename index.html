@@ -70,6 +70,12 @@
     }
     .animate-slide-up { animation: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
+    @keyframes toast-in {
+        from { transform: translate(-50%, 100%); opacity: 0; }
+        to { transform: translate(-50%, 0); opacity: 1; }
+    }
+    .animate-toast-in { animation: toast-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
     /* Table row hover fix - Limit to tbody to prevent header flickering */
     tbody tr {
         transition: background-color 0.2s ease;

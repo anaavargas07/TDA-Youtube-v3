@@ -10,14 +10,15 @@ import { ErrorDisplay } from './components/ErrorDisplay';
 import { GroupSettingsModal } from './components/GroupSettingsModal';
 import { TopBar } from './components/TopBar';
 import { Auth } from './components/Auth';
+import { Toast } from './components/Toast'; // New
 import { supabase } from './lib/supabase';
 import { useSupabaseAuth } from './hooks/useSupabaseAuth';
 import { useAppData } from './hooks/useAppData';
 import { getChannelVideos, setApiKeys, validateYouTubeApiKey, setOnKeyIndexChange, setOnQuotaChange, getInitialQuota } from './services/youtubeService';
-import { ChannelsView } from './components/ChannelsView'; // New Channels View
-import { GroupsOverviewModal } from './components/GroupsOverviewModal'; // New: GroupsOverviewModal
+import { ChannelsView } from './components/ChannelsView'; 
+import { GroupsOverviewModal } from './components/GroupsOverviewModal'; 
 import type { ChannelStats, VideoStat, ChannelGroup, AppSettings, SortOrder } from './types';
-import { MoviesView } from './components/MoviesView'; // Movies view is now self-contained
+import { MoviesView } from './components/MoviesView'; 
 
 interface SelectedChannelData {
     stats: ChannelStats;
@@ -26,22 +27,22 @@ interface SelectedChannelData {
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
-    refreshInterval: 3600000, // Default: Every 1 hour
+    refreshInterval: 3600000, 
     rowsPerPage: 100
 };
 
 const App: React.FC = () => {
     const { session, profile, loading: authLoading, handleSignOut, updateProfile } = useSupabaseAuth();
     
-    // Data Logic from Hook
     const {
         apiKeys, setApiKeysState,
         trackedChannels, setTrackedChannels,
-        channelGroups, setChannelGroups, // Added setChannelGroups
-        movies, setMovies, // Added setMovies
+        channelGroups, setChannelGroups,
+        movies, setMovies,
         isLoading, error, setError,
         isRefreshing, handleRefreshChannels,
         isAddingChannel, handleAddChannel, handleRemoveChannel,
+        handleBulkUpdateChannels, handleUpdateChannel,
         handleAddMovies, handleUpdateMovie, handleBulkUpdateMovieStatus, handleDeleteMovie,
         handleSaveGroup, handleDeleteGroup
     } = useAppData(session);
@@ -56,37 +57,31 @@ const App: React.FC = () => {
     });
 
     const [currentKeyIndex, setCurrentKeyIndex] = useState(0);
-    // FIX: Define quotaUsage state and initialize it using getInitialQuota
     const [quotaUsage, setQuotaUsage] = useState(() => getInitialQuota());
     const [selectedChannel, setSelectedChannel] = useState<SelectedChannelData | null>(null);
     const [isDashboardModalOpen, setIsDashboardModalOpen] = useState(false);
     const [isDashboardLoading, setIsDashboardLoading] = useState(false);
     const [dashboardSortOrder, setDashboardSortOrder] = useState<SortOrder>('date');
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null); // New state for toast
     
-    // Track recently viewed channels
     const [recentlyViewedIds, setRecentlyViewedIds] = useState<string[]>(() => {
         const saved = localStorage.getItem('infi_recent_channels');
         return saved ? JSON.parse(saved) : [];
     });
 
-    // Main navigation view state
     const [currentMainView, setCurrentMainView] = useState<'channels' | 'movies'>('channels');
-    // Sub-navigation view state for 'channels' (now only 'allChannels' is relevant for ChannelsView itself)
-    const [currentChannelsSubView, setCurrentChannelsSubView] = useState<'allChannels'>('allChannels'); // Renamed and simplified
 
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isAccountOpen, setIsAccountOpen] = useState(false);
-    const [isGroupModalOpen, setIsGroupModalOpen] = useState(false); // For creating/editing individual groups
+    const [isGroupModalOpen, setIsGroupModalOpen] = useState(false); 
     const [editingGroup, setEditingGroup] = useState<ChannelGroup | null>(null);
-
-    const [isGroupsOverviewModalOpen, setIsGroupsOverviewModalOpen] = useState(false); // New: State for GroupsOverviewModal
+    const [isGroupsOverviewModalOpen, setIsGroupsOverviewModalOpen] = useState(false); 
 
     const validatingKeysRef = useRef(new Set<string>());
     
     const apiKeySet = apiKeys.some(k => k.status === 'valid');
     const dailyQuotaLimit = apiKeys.filter(k => k.status === 'valid').length > 0 ? apiKeys.filter(k => k.status === 'valid').length * 10000 : 10000;
 
-    // Tính toán thời gian cập nhật gần nhất toàn cục
     const lastGlobalRefresh = useMemo(() => {
         if (trackedChannels.length === 0) return undefined;
         const timestamps = trackedChannels.map(c => c.lastRefreshedAt || 0);
@@ -131,16 +126,31 @@ const App: React.FC = () => {
     }, [apiKeys, setApiKeysState]);
 
     useEffect(() => {
-        // FIX: setOnQuotaChange now correctly refers to the state setter
         setOnKeyIndexChange(setCurrentKeyIndex);
         setOnQuotaChange(setQuotaUsage);
     }, []);
+
+    // New helper to show toast
+    const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 3000);
+    };
+
+    // Wrapper for handleSaveGroup to add notification
+    const handleSaveGroupWithNotification = async (groupData: any) => {
+        try {
+            await handleSaveGroup(groupData);
+            showToast(groupData.id ? 'Group updated successfully!' : 'Group created successfully!');
+        } catch (e: any) {
+            console.error(e);
+            showToast(e.message || 'Failed to save group', 'error');
+        }
+    };
 
     const handleSelectChannel = async (id: string) => {
         const stats = trackedChannels.find(c => c.id === id);
         if (!stats || stats.status === 'terminated') return;
         
-        // Update recently viewed history
         setRecentlyViewedIds(prev => {
             const filtered = prev.filter(rid => rid !== id);
             const updated = [id, ...filtered].slice(0, 5);
@@ -148,13 +158,12 @@ const App: React.FC = () => {
             return updated;
         });
 
-        // Open modal immediately with skeleton
         setSelectedChannel({ stats, videos: [] });
         setIsDashboardModalOpen(true);
         setIsDashboardLoading(true);
         
         try {
-            const videoData = await getChannelVideos(stats.uploadsPlaylistId, 24); // Fetch more for better sorting
+            const videoData = await getChannelVideos(stats.uploadsPlaylistId, 24); 
             setSelectedChannel({ stats, videos: videoData.videos });
         } catch(e) {
             console.error(e);
@@ -202,14 +211,16 @@ const App: React.FC = () => {
                         <>
                             {currentMainView === 'channels' && (
                                 <ChannelsView
-                                    currentSubView={currentChannelsSubView} 
+                                    currentSubView={'allChannels'} 
                                     trackedChannels={trackedChannels}
                                     channelGroups={channelGroups}
                                     onAddChannel={handleAddChannel}
                                     onSelectChannel={handleSelectChannel}
                                     onRemoveChannel={handleRemoveChannel}
-                                    onSaveGroup={handleSaveGroup}
+                                    onUpdateChannel={handleUpdateChannel}
+                                    onSaveGroup={handleSaveGroupWithNotification} // Use wrapped function
                                     onDeleteGroup={handleDeleteGroup}
+                                    handleBulkUpdateChannels={handleBulkUpdateChannels}
                                     isAdding={isAddingChannel}
                                     apiKeySet={apiKeySet}
                                     settings={appSettings}
@@ -226,7 +237,6 @@ const App: React.FC = () => {
                                     onAddMovies={handleAddMovies}
                                     onUpdateMovie={handleUpdateMovie}
                                     onBulkUpdateMovieStatus={handleBulkUpdateMovieStatus}
-                                    onSortChange={(val) => {}} 
                                     onDeleteMovie={handleDeleteMovie}
                                     settings={appSettings}
                                     setMovies={setMovies} 
@@ -250,34 +260,13 @@ const App: React.FC = () => {
                         apiKeys={apiKeys}
                         onApiKeysChange={async (keys) => {
                             if (!session) return;
-                            
                             try {
-                                // 1. Delete all existing keys for the user and wait for it to complete.
-                                await supabase
-                                    .from('api_keys')
-                                    .delete()
-                                    .eq('user_id', session.user.id);
-                                
-                                // 2. If there are new keys to add, insert them and wait for completion.
+                                await supabase.from('api_keys').delete().eq('user_id', session.user.id);
                                 if (keys.length > 0) {
-                                    const { error: insertError } = await supabase
-                                        .from('api_keys')
-                                        .insert(keys.map(k => ({ 
-                                            user_id: session.user.id, 
-                                            key_value: k, 
-                                            status: 'unknown' 
-                                        })));
-                                    
+                                    const { error: insertError } = await supabase.from('api_keys').insert(keys.map(k => ({ user_id: session.user.id, key_value: k, status: 'unknown' })));
                                     if (insertError) throw insertError;
                                 }
-                    
-                                // 3. Only after the database operations are successful, update the local state.
-                                // This ensures the UI reflects the persisted state.
-                                setApiKeysState(keys.map(k => ({
-                                    value: k,
-                                    status: 'unknown' // Reset status on save as they will be re-validated.
-                                })));
-                    
+                                setApiKeysState(keys.map(k => ({ value: k, status: 'unknown' })));
                             } catch (dbError: any) {
                                 console.error("Failed to save API keys:", dbError);
                                 setError(`Error saving API keys: ${dbError.message}`);
@@ -299,7 +288,7 @@ const App: React.FC = () => {
                     <GroupSettingsModal 
                         isOpen={isGroupModalOpen}
                         onClose={() => setIsGroupModalOpen(false)}
-                        onSave={handleSaveGroup}
+                        onSave={handleSaveGroupWithNotification} // Use wrapped function
                         existingGroup={editingGroup}
                         allChannels={trackedChannels}
                     />
@@ -328,16 +317,16 @@ const App: React.FC = () => {
                         onEditGroup={(group) => {
                             setEditingGroup(group);
                             setIsGroupModalOpen(true);
-                            setIsGroupsOverviewModalOpen(false); // Close this modal when opening GroupSettingsModal
                         }}
                         onDeleteGroup={handleDeleteGroup}
                         onCreateGroup={() => {
                             setEditingGroup(null);
                             setIsGroupModalOpen(true);
-                            setIsGroupsOverviewModalOpen(false); // Close this modal when opening GroupSettingsModal
                         }}
                         settings={appSettings}
                     />
+
+                    {toast && <Toast message={toast.message} type={toast.type} />}
                 </>
             )}
         </>

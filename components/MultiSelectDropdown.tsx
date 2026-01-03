@@ -5,9 +5,9 @@ import { createPortal } from 'react-dom';
 export interface Option {
     id: string;
     label: string;
-    color?: string; // Optional color dot (deprecated in UI but kept in interface for compatibility)
+    color?: string;
     icon?: React.ReactNode;
-    badge?: string | number; // New field for channel counts or info
+    badge?: string | number;
 }
 
 interface MultiSelectDropdownProps {
@@ -17,8 +17,9 @@ interface MultiSelectDropdownProps {
     onChange: (selectedIds: string[]) => void;
     icon?: React.ReactNode;
     className?: string;
-    header?: React.ReactNode | ((close: () => void) => React.ReactNode); // Support render prop
-    footer?: React.ReactNode | ((close: () => void) => React.ReactNode); // Support render prop
+    onCreateClick?: () => void;
+    onManageClick?: () => void;
+    manageCount?: number;
 }
 
 export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({ 
@@ -28,8 +29,9 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
     onChange,
     icon,
     className = "w-full md:w-56",
-    header,
-    footer
+    onCreateClick,
+    onManageClick,
+    manageCount = 0
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -50,7 +52,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
             const rect = buttonRef.current.getBoundingClientRect();
             const spaceBelow = window.innerHeight - rect.bottom;
             const spaceAbove = rect.top;
-            const MENU_MAX_HEIGHT = 320; 
+            const MENU_MAX_HEIGHT = 400; 
 
             let newPlacement: 'bottom' | 'top' = 'bottom';
             if (spaceBelow < MENU_MAX_HEIGHT && spaceAbove > MENU_MAX_HEIGHT) { 
@@ -124,11 +126,31 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
                 top: placement === 'bottom' ? (menuPosition?.top ?? 0) + (menuPosition?.height ?? 0) + 8 : 'auto',
                 bottom: placement === 'top' ? (window.innerHeight - (menuPosition?.top ?? 0)) + 8 : 'auto',
                 left: menuPosition?.left ?? 0,
-                width: Math.max(menuPosition?.width ?? 0, 220),
-                maxHeight: '350px',
+                width: Math.max(menuPosition?.width ?? 0, 260),
+                maxHeight: '450px',
             }}
         >
-            <div className="p-2 border-b border-gray-700">
+            {/* Header with Create | Manage */}
+            {(onCreateClick || onManageClick) && (
+                <div className="flex border-b border-gray-700 h-10 shrink-0">
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); onCreateClick?.(); closeMenu(); }}
+                        className="flex-1 flex items-center justify-center gap-1.5 text-[11px] font-bold text-indigo-400 hover:bg-white/5 transition-colors border-r border-gray-700"
+                    >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" /></svg>
+                        Create
+                    </button>
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); onManageClick?.(); closeMenu(); }}
+                        className="flex-1 flex items-center justify-center gap-1.5 text-[11px] font-bold text-emerald-400 hover:bg-white/5 transition-colors"
+                    >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                        Manage ({manageCount})
+                    </button>
+                </div>
+            )}
+
+            <div className="p-2 border-b border-gray-700 bg-gray-900/30">
                 <div className="relative">
                     <svg className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -144,12 +166,6 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
                 </div>
             </div>
 
-            {header && (
-                <div className="border-b border-gray-700 bg-gray-900/50">
-                    {typeof header === 'function' ? header(closeMenu) : header}
-                </div>
-            )}
-
             <div className="max-h-60 overflow-y-auto py-1 custom-scrollbar">
                 {searchTerm === '' && options.length > 0 && (
                     <div 
@@ -159,7 +175,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
                         <div className={`w-4 h-4 rounded border flex items-center justify-center mr-3 transition-colors ${isAllSelected ? 'bg-indigo-600 border-indigo-600' : 'border-gray-500 group-hover:border-gray-400'}`}>
                             {isAllSelected && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                         </div>
-                        <span className="text-sm text-white font-medium">Select All</span>
+                        <span className="text-sm text-white font-bold">Select All</span>
                     </div>
                 )}
 
@@ -176,9 +192,9 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
                                     {isSelected && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                                 </div>
                                 {option.icon && <div className="text-gray-500 group-hover:text-white transition-colors mr-2 flex-shrink-0">{option.icon}</div>}
-                                <span className="text-sm text-gray-300 group-hover:text-white truncate flex-1">{option.label}</span>
+                                <span className="text-sm text-gray-300 group-hover:text-white truncate flex-1 font-medium">{option.label}</span>
                                 {option.badge !== undefined && (
-                                    <span className="ml-2 text-[9px] font-black px-1.5 py-0.5 rounded-md bg-gray-800/80 text-gray-500 group-hover:text-indigo-400 border border-white/5 transition-colors shadow-sm">
+                                    <span className="ml-2 text-[10px] font-black px-1.5 py-0.5 rounded bg-gray-800 text-gray-500 group-hover:text-indigo-400 border border-white/5 transition-colors">
                                         ({option.badge})
                                     </span>
                                 )}
@@ -186,15 +202,9 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
                         );
                     })
                 ) : (
-                    <div className="px-3 py-2 text-sm text-gray-500 text-center">No results found</div>
+                    <div className="px-3 py-4 text-sm text-gray-500 text-center italic">No results found</div>
                 )}
             </div>
-
-            {footer && (
-                <div className="border-t border-gray-700 bg-gray-900/50">
-                    {typeof footer === 'function' ? footer(closeMenu) : footer}
-                </div>
-            )}
         </div>
     );
 
@@ -203,11 +213,11 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
             <button
                 ref={buttonRef}
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center justify-between w-full h-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-sm text-gray-300 hover:bg-gray-800 hover:border-gray-600 transition-colors focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+                className="flex items-center justify-between w-full h-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-xl text-sm text-gray-300 hover:bg-gray-800 hover:border-gray-600 transition-colors focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
             >
                 <div className="flex items-center gap-2 truncate">
                     {icon}
-                    <span className="truncate">
+                    <span className="truncate font-semibold">
                         {selectedIds.length === 0 
                             ? label 
                             : selectedIds.length === options.length 

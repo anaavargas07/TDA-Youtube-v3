@@ -37,7 +37,6 @@ export const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({ isOpen, 
                 setName('');
                 setSelectedChannelIds(new Set());
             }
-            // Reset sort on open
             setSortConfig({ key: 'title', direction: 'asc' });
         }
     }, [existingGroup, isOpen]);
@@ -98,7 +97,6 @@ export const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({ isOpen, 
             setTimeout(() => nameInput?.classList.remove('ring-2', 'ring-red-500'), 2000);
             return;
         }
-        // FIX: Add the missing 'createdAt' property to satisfy the 'onSave' prop type.
         onSave({
             id: existingGroup?.id,
             name: name.trim(),
@@ -106,6 +104,12 @@ export const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({ isOpen, 
             createdAt: existingGroup?.createdAt || new Date().toISOString(),
         });
         onClose();
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && e.ctrlKey) {
+            handleSave();
+        }
     };
     
     const getSortIndicator = (key: SortKey) => {
@@ -115,7 +119,7 @@ export const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({ isOpen, 
 
     return (
          <div 
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[110]"
             onClick={onClose}
             role="dialog"
             aria-modal="true"
@@ -143,9 +147,11 @@ export const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({ isOpen, 
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
+                            onKeyDown={handleKeyDown}
                             placeholder="e.g., Main Competitors"
                             className="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                         />
+                        <p className="text-[10px] text-gray-500 mt-1">Tip: Press Ctrl + Enter to save quickly.</p>
                     </div>
                     <div>
                         <div className="flex justify-between items-center mb-2">

@@ -81,46 +81,48 @@ const fetchYouTubeAPI = async (endpoint: string, params: Record<string, string>)
     
     const cost = QUOTA_COSTS[endpoint] || 1; 
     const startIndex = currentKeyIndex;
-    let lastError: Error | null = null;
+    let lastError: any = null;
 
     for (let i = 0; i < apiKeys.length; i++) {
         const keyIndex = (startIndex + i) % apiKeys.length;
         const apiKeyObj = apiKeys[keyIndex];
 
-        if ((apiKeyObj.dailyUsage || 0) + cost > 10000) continue;
+        // Skip keys that are clearly invalid or over quota if we have other options
+        if (apiKeys.length > 1 && (apiKeyObj.status === 'invalid' || apiKeyObj.status === 'quota_exceeded')) continue;
+        if ((apiKeyObj.dailyUsage || 0) + cost > 10000 && apiKeys.length > 1) continue;
 
         try {
             const query = new URLSearchParams({ ...params, key: apiKeyObj.value }).toString();
             const response = await fetch(`${API_BASE_URL}/${endpoint}?${query}`);
 
             if (!response.ok) {
-                const errorData = await response.json();
+                const errorData = await response.json().catch(() => ({}));
                 const reason = errorData.error?.errors?.[0]?.reason;
-                const message = errorData.error?.message || 'An unknown API error occurred.';
+                const message = errorData.error?.message || `API Request failed with status ${response.status}`;
                 lastError = new Error(message);
                 
-                if (reason === 'quotaExceeded' || reason === 'dailyLimitExceeded') continue; 
-                throw lastError; // For other errors like 404, throw immediately
+                // If it's a key-related error, try next key
+                if (reason === 'quotaExceeded' || reason === 'dailyLimitExceeded' || response.status === 403 || response.status === 429) {
+                    continue; 
+                }
+                
+                throw lastError;
             }
 
             updateKeyUsage(keyIndex, cost);
-            
-            // **FIX**: Stick with the current key if it's successful
-            // Only change when an error (like quota exceeded) occurs, which the loop handles
             currentKeyIndex = keyIndex;
             if (onKeyIndexChangeCallback) onKeyIndexChangeCallback(keyIndex);
             
             return await response.json();
 
-        } catch (error) {
-            const errorMsg = error instanceof Error ? error.message : String(error);
-            lastError = error instanceof Error ? error : new Error(errorMsg);
-            // If it's a structural error (not quota), we might want to throw or continue.
-            // For add channel, we want to know if it's a real 404.
-            if (errorMsg.includes('Channel not found')) throw error;
+        } catch (error: any) {
+            // "Failed to fetch" is usually a TypeError. We catch it and try the next key.
+            lastError = error;
+            console.warn(`Key index ${keyIndex} failed: ${error.message}. Trying next key...`);
+            continue;
         }
     }
-    throw new Error(`API Request failed. ${lastError?.message || 'Check your connection or API keys.'}`);
+    throw new Error(`API Request failed after trying all keys: ${lastError?.message || 'Check connection.'}`);
 };
 
 export const validateYouTubeApiKey = async (key: string): Promise<{ status: KeyStatus; error?: string }> => {
@@ -150,13 +152,9 @@ async function resolveChannelId(channelIdentifier: string): Promise<string> {
         const searchData = await fetchYouTubeAPI('search', { part: 'snippet', q: channelIdentifier, type: 'channel', maxResults: '1' });
         if (searchData.items && searchData.items.length > 0) return searchData.items[0].snippet.channelId;
     } catch (error) {}
-    // If not found, return original string if it looks like a custom name, handle parsing elsewhere
     return channelIdentifier; 
 }
 
-/**
- * Lấy video đầu tiên tuyệt đối của kênh bằng Search API.
- */
 export const getAbsoluteOldestVideo = async (channelId: string, channelPublishedAt: string): Promise<VideoStat | null> => {
     try {
         const startDate = new Date(channelPublishedAt);
@@ -189,9 +187,6 @@ export const getAbsoluteOldestVideo = async (channelId: string, channelPublished
     }
 };
 
-/**
- * Lấy video mới nhất bằng cách truy vấn Playlist Uploads.
- */
 export const getAbsoluteNewestVideo = async (uploadsPlaylistId: string): Promise<VideoStat | null> => {
     try {
         const playlistData = await fetchYouTubeAPI('playlistItems', {
@@ -261,7 +256,6 @@ export const getChannelStats = async (channelIdentifier: string): Promise<Channe
             status: 'active'
         };
     } catch (error: any) {
-        // Return a shell object for terminated/invalid channels
         return {
             id: resolvedId.startsWith('UC') ? resolvedId : 'INVALID_ID',
             title: resolvedId,
@@ -296,8 +290,10 @@ export const getChannelStatsBatch = async (channelIds: string[]): Promise<Partia
                     status: 'active' as const
                 })));
             }
-            // Handle missing IDs in the batch if needed (not strictly required by YouTube API as it just omits them)
-        } catch (error) { console.error("Error fetching batch channel stats:", error); }
+        } catch (error: any) { 
+            console.error("Error fetching batch channel stats chunk:", error.message);
+            // Don't re-throw here so other chunks can still succeed
+        }
     }
     return results;
 }
@@ -305,24 +301,28 @@ export const getChannelStatsBatch = async (channelIds: string[]): Promise<Partia
 export const getChannelVideos = async (playlistId: string, maxResults: number, pageToken?: string): Promise<{ videos: VideoStat[], nextPageToken?: string }> => {
     const playlistParams: Record<string, string> = { part: 'snippet', playlistId: playlistId, maxResults: String(maxResults) };
     if (pageToken) playlistParams.pageToken = pageToken;
-    const playlistData = await fetchYouTubeAPI('playlistItems', playlistParams);
-    if (!playlistData.items || playlistData.items.length === 0) return { videos: [], nextPageToken: undefined };
+    try {
+        const playlistData = await fetchYouTubeAPI('playlistItems', playlistParams);
+        if (!playlistData.items || playlistData.items.length === 0) return { videos: [], nextPageToken: undefined };
 
-    const videoIds = playlistData.items.map((item: any) => item.snippet?.resourceId?.videoId).filter(Boolean).join(',');
-    if (!videoIds) return { videos: [], nextPageToken: playlistData.nextPageToken };
+        const videoIds = playlistData.items.map((item: any) => item.snippet?.resourceId?.videoId).filter(Boolean).join(',');
+        if (!videoIds) return { videos: [], nextPageToken: playlistData.nextPageToken };
 
-    const videosData = await fetchYouTubeAPI('videos', { part: 'snippet,statistics', id: videoIds });
-    const videoDataMap = new Map(videosData.items.map((item: any) => [item.id, item]));
-    const originalOrderVideoIds = playlistData.items.map((item: any) => item.snippet.resourceId.videoId);
+        const videosData = await fetchYouTubeAPI('videos', { part: 'snippet,statistics', id: videoIds });
+        const videoDataMap = new Map(videosData.items.map((item: any) => [item.id, item]));
+        const originalOrderVideoIds = playlistData.items.map((item: any) => item.snippet.resourceId.videoId);
 
-    const videos: VideoStat[] = originalOrderVideoIds.map((id: string) => {
-        const item: any = videoDataMap.get(id);
-        if (!item) return null;
-        return {
-            id: item.id, publishedAt: item.snippet.publishedAt, title: item.snippet.title,
-            description: item.snippet.description, thumbnailUrl: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default.url,
-            viewCount: item.statistics.viewCount, likeCount: item.statistics.likeCount, commentCount: item.statistics.commentCount,
-        };
-    }).filter((v): v is VideoStat => v !== null);
-    return { videos, nextPageToken: playlistData.nextPageToken };
+        const videos: VideoStat[] = originalOrderVideoIds.map((id: string) => {
+            const item: any = videoDataMap.get(id);
+            if (!item) return null;
+            return {
+                id: item.id, publishedAt: item.snippet.publishedAt, title: item.snippet.title,
+                description: item.snippet.description, thumbnailUrl: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default.url,
+                viewCount: item.statistics.viewCount, likeCount: item.statistics.likeCount, commentCount: item.statistics.commentCount,
+            };
+        }).filter((v): v is VideoStat => v !== null);
+        return { videos, nextPageToken: playlistData.nextPageToken };
+    } catch (e) {
+        return { videos: [] };
+    }
 };

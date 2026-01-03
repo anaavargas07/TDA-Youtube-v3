@@ -1,10 +1,11 @@
 
-import React, { useState } from 'react';
-import type { ChannelStats } from '../types';
+import React, { useState, useMemo } from 'react';
+import type { ChannelStats, MonetizationStatus, EngagementStatus } from '../types';
 import { formatNumber, formatRelativeTime } from '../utils/helpers';
 import { MiniVideoDisplay } from './MiniVideoDisplay';
 import { CircularCheckbox } from './CircularCheckbox'; 
 import { SortableHeader } from './SortableHeader'; 
+import { SearchableSelect } from './SearchableSelect';
 
 interface ChannelTableProps {
     channels: ChannelStats[];
@@ -12,12 +13,27 @@ interface ChannelTableProps {
     onSortChange: (key: any) => void;
     onSelect: (channelId: string) => void;
     onRemove: (channelId: string) => void;
+    onUpdateChannel: (id: string, updates: Partial<ChannelStats>) => void;
     visibleColumns: string[];
     selectedIds: string[];
     onToggleRow: (id: string) => void;
     onToggleAll: () => void;
     isAllSelected: boolean;
 }
+
+export const MONETIZATION_OPTIONS: { id: MonetizationStatus; label: string; colorClass: string }[] = [
+    { id: 'not_monetized', label: '🚫 Not Monetized', colorClass: 'text-gray-400 bg-gray-400/10 border-gray-400/20' },
+    { id: 'monetized', label: '💲 Monetized', colorClass: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' },
+    { id: 'demonetized', label: '❌ Demonetized', colorClass: 'text-red-400 bg-red-400/10 border-red-400/20' },
+    { id: 'policy_violation', label: '🚨 Policy Violation', colorClass: 'text-orange-400 bg-orange-400/10 border-orange-400/20' },
+    { id: 'on_hold', label: '🕒 On Hold', colorClass: 'text-blue-400 bg-blue-400/10 border-blue-400/20' },
+];
+
+export const ENGAGEMENT_OPTIONS: { id: EngagementStatus; label: string; colorClass: string }[] = [
+    { id: 'good', label: '🔥 Good', colorClass: 'text-orange-400 bg-orange-400/10 border-orange-400/20' },
+    { id: 'decreased', label: '📉 Decreased', colorClass: 'text-red-400 bg-red-400/10 border-red-400/20' },
+    { id: 'pause', label: '⏸️ Pause', colorClass: 'text-gray-400 bg-gray-400/10 border-gray-400/20' },
+];
 
 const ModernStat: React.FC<{ value: number, max: number, label: string, gradientClass: string, rawValue: string }> = ({ value, max, label, gradientClass, rawValue }) => {
     const percentage = max > 0 ? (value / max) * 100 : 0;
@@ -76,6 +92,7 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
     sortConfig, 
     onSortChange, 
     onSelect, 
+    onUpdateChannel,
     visibleColumns,
     selectedIds,
     onToggleRow,
@@ -119,14 +136,26 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                 icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
                             />
                         )}
-                        {isVisible('publishedAt') && (
+                        {isVisible('isMonetized') && (
                             <SortableHeader 
-                                label="Created Date" 
-                                sortKey="publishedAt" 
+                                label="Monetized" 
+                                sortKey="monetizationStatus" 
                                 currentSort={sortConfig} 
                                 onSort={onSortChange}
-                                className="border-b border-gray-700/50"
-                                icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
+                                align="center"
+                                className="w-[180px] border-b border-gray-700/50"
+                                icon={<span className="text-sm">💸</span>}
+                            />
+                        )}
+                        {isVisible('engagementRate') && (
+                            <SortableHeader 
+                                label="Engagement" 
+                                sortKey="engagementStatus" 
+                                currentSort={sortConfig} 
+                                onSort={onSortChange}
+                                align="center"
+                                className="w-[150px] border-b border-gray-700/50"
+                                icon={<span className="text-sm">👍</span>}
                             />
                         )}
                         {isVisible('subscriberCount') && (
@@ -149,30 +178,10 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                 icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>}
                             />
                         )}
-                        {isVisible('videoCount') && (
-                             <SortableHeader 
-                                label="Total Videos" 
-                                sortKey="videoCount" 
-                                currentSort={sortConfig} 
-                                onSort={onSortChange} 
-                                className="w-[130px] border-b border-gray-700/50"
-                                icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" /></svg>}
-                            />
-                        )}
                         {isVisible('newestVideo') && (
                             <SortableHeader 
                                 label="Newest Video" 
                                 sortKey="newestVideoDate" 
-                                currentSort={sortConfig} 
-                                onSort={onSortChange} 
-                                className="w-1/6 border-b border-gray-700/50"
-                                icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0118 0Z" /></svg>}
-                            />
-                        )}
-                        {isVisible('oldestVideo') && (
-                            <SortableHeader 
-                                label="Oldest Video" 
-                                sortKey="oldestVideoDate" 
                                 currentSort={sortConfig} 
                                 onSort={onSortChange} 
                                 className="w-1/6 border-b border-gray-700/50"
@@ -195,7 +204,7 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                 key={channel.id} 
                                 className={`hover:bg-white/[0.03] transition-all duration-200 group ${isTerminated ? 'opacity-60 bg-red-900/10' : ''} ${isSelected ? 'bg-indigo-900/20' : ''}`}
                                 onClick={(e) => {
-                                    if (!(e.target as HTMLElement).closest('.click-navigate')) {
+                                    if (!(e.target as HTMLElement).closest('.no-row-click')) {
                                         onToggleRow(channel.id);
                                     }
                                 }}
@@ -219,9 +228,6 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                                 {isRecentlyActive && (
                                                     <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-gray-900 shadow-sm z-10"></span>
                                                 )}
-                                                {isTerminated && (
-                                                    <div className="absolute -top-1 -right-1 bg-red-600 text-white text-[9px] px-1 rounded font-bold">DEAD</div>
-                                                )}
                                                 <div className="absolute inset-0 bg-indigo-500/10 opacity-0 group-hover/avatar:opacity-100 rounded-full transition-opacity"></div>
                                             </div>
                                             <div className="ml-4 overflow-hidden">
@@ -233,23 +239,33 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                                     >
                                                         {channel.title}
                                                     </div>
-                                                    {isRecentlyActive && (
-                                                        <div className="flex items-center flex-shrink-0 bg-green-500/10 px-1.5 py-0.5 rounded border border-green-500/20">
-                                                            <span className="w-1 h-1 bg-green-500 rounded-full animate-pulse mr-1"></span>
-                                                            <span className="text-[8px] font-black text-green-500 uppercase tracking-tighter">New</span>
-                                                        </div>
-                                                    )}
                                                 </div>
                                                 <ChannelIdDisplay id={channel.id} />
                                             </div>
                                         </div>
                                     </td>
                                 )}
-                                {isVisible('publishedAt') && (
-                                    <td className="px-4 py-2.5 whitespace-nowrap border-b border-gray-700/50">
-                                        <div className="flex flex-col text-center">
-                                            <span className="text-[10px] font-medium text-gray-300">{new Date(channel.publishedAt).toLocaleDateString()}</span>
-                                            <span className="text-[8px] font-normal text-gray-500 opacity-80">{new Date(channel.publishedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                {isVisible('isMonetized') && (
+                                    <td className="px-4 py-2.5 text-center border-b border-gray-700/50 no-row-click">
+                                        <div className="flex justify-center w-full">
+                                            <SearchableSelect 
+                                                value={channel.monetizationStatus || 'not_monetized'}
+                                                options={MONETIZATION_OPTIONS}
+                                                onChange={(val) => onUpdateChannel(channel.id, { monetizationStatus: val as MonetizationStatus })}
+                                                className="w-[160px]"
+                                            />
+                                        </div>
+                                    </td>
+                                )}
+                                {isVisible('engagementRate') && (
+                                    <td className="px-4 py-2.5 text-center border-b border-gray-700/50 no-row-click">
+                                        <div className="flex justify-center w-full">
+                                            <SearchableSelect 
+                                                value={channel.engagementStatus || 'good'}
+                                                options={ENGAGEMENT_OPTIONS}
+                                                onChange={(val) => onUpdateChannel(channel.id, { engagementStatus: val as EngagementStatus })}
+                                                className="w-[130px]"
+                                            />
                                         </div>
                                     </td>
                                 )}
@@ -275,25 +291,9 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                         />
                                     </td>
                                 )}
-                                {isVisible('videoCount') && (
-                                     <td className="px-4 py-2.5 align-middle border-b border-gray-700/50">
-                                        <ModernStat 
-                                            value={parseInt(channel.videoCount, 10) || 0} 
-                                            max={maxValues.videos} 
-                                            label={formatNumber(channel.videoCount)}
-                                            rawValue={channel.videoCount}
-                                            gradientClass="bg-gradient-to-r from-purple-500 to-fuchsia-400"
-                                        />
-                                    </td>
-                                )}
                                 {isVisible('newestVideo') && (
                                     <td className="px-4 py-2.5 align-middle border-b border-gray-700/50">
                                         {isTerminated ? <span className="text-xs text-red-500 italic">Unavailable</span> : <MiniVideoDisplay video={channel.newestVideo} type="Newest" />}
-                                    </td>
-                                )}
-                                {isVisible('oldestVideo') && (
-                                    <td className="px-4 py-2.5 align-middle border-b border-gray-700/50">
-                                        {isTerminated ? <span className="text-xs text-red-500 italic">Unavailable</span> : <MiniVideoDisplay video={channel.oldestVideo} type="Oldest" />}
                                     </td>
                                 )}
                             </tr>

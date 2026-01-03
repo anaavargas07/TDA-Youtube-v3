@@ -18,6 +18,9 @@ export interface VideoStat {
   commentCount: string;
 }
 
+export type MonetizationStatus = 'not_monetized' | 'monetized' | 'demonetized' | 'policy_violation' | 'on_hold';
+export type EngagementStatus = 'good' | 'decreased' | 'pause';
+
 export interface ChannelStats {
   id: string;
   title: string;
@@ -35,6 +38,8 @@ export interface ChannelStats {
   newestVideo?: VideoStat | null;
   oldestVideo?: VideoStat | null;
   status?: 'active' | 'terminated' | 'error';
+  engagementStatus?: EngagementStatus; 
+  monetizationStatus?: MonetizationStatus;
 }
 
 export type MovieStatus = 'Playlist' | 'Download' | 'Copyright Check' | 'Visual Copyright' | 'Audio Copyright' | 'Strike Check' | 'Done';

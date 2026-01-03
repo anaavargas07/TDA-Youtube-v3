@@ -1,16 +1,16 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { ChannelTable } from './ChannelTable';
-import { SortKey as GroupsViewSortKey, SortDirection as GroupsViewSortDirection } from './GroupsOverviewModal';
+import { ChannelTable, MONETIZATION_OPTIONS, ENGAGEMENT_OPTIONS } from './ChannelTable';
 import { MultiSelectDropdown, Option } from './MultiSelectDropdown';
 import { AddChannelModal } from './AddChannelModal';
 import { SummaryCards } from './SummaryCards';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
 import { BulkActionBar } from './BulkActionBar';
-import type { ChannelStats, ChannelGroup, AppSettings } from '../types';
+import { StatusOverviewModal } from './StatusOverviewModal'; // New
+import type { ChannelStats, ChannelGroup, AppSettings, MonetizationStatus, EngagementStatus } from '../types';
 import type { AddChannelResult } from '../hooks/useAppData';
 
-type SortKey = 'title' | 'subscriberCount' | 'videoCount' | 'viewCount' | 'publishedAt' | 'newestVideoDate' | 'oldestVideoDate';
+type SortKey = 'title' | 'subscriberCount' | 'videoCount' | 'viewCount' | 'publishedAt' | 'addedAt' | 'newestVideoDate' | 'oldestVideoDate' | 'monetizationStatus' | 'engagementStatus';
 type SortDirection = 'asc' | 'desc';
 
 interface ChannelsViewProps {
@@ -20,8 +20,10 @@ interface ChannelsViewProps {
     onAddChannel: (channelInput: string) => Promise<AddChannelResult[]>;
     onSelectChannel: (channelId: string) => void;
     onRemoveChannel: (channelId: string) => void;
+    onUpdateChannel: (id: string, updates: Partial<ChannelStats>) => void;
     onSaveGroup: (group: Omit<ChannelGroup, 'id' | 'createdAt'> & { id?: string; createdAt: string }) => void;
     onDeleteGroup: (groupId: string) => void;
+    handleBulkUpdateChannels: (ids: string[], updates: Partial<ChannelStats>) => Promise<void>;
     isAdding: boolean;
     apiKeySet: boolean;
     settings: AppSettings;
@@ -32,51 +34,48 @@ interface ChannelsViewProps {
 }
 
 const ALL_CHANNEL_COLUMNS: Option[] = [
-    { id: 'title', label: 'Channel Name', icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" /></svg> },
-    { id: 'publishedAt', label: 'Created Date', icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" /></svg> },
-    { id: 'subscriberCount', label: 'Subscribers', icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0a5.995 5.995 0 0 0-4.058-2.532M6 18.719a5.971 5.971 0 0 1 .941-3.197m0 0a5.995 5.995 0 0 1 4.058-2.532M0 0a5.995 5.995 0 0 1 4.058-2.532M15 7.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" /></svg> },
-    { id: 'viewCount', label: 'Total Views', icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 016 0Z" /></svg> },
-    { id: 'videoCount', label: 'Total Videos', icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" /></svg> },
-    { id: 'newestVideo', label: 'Newest Video', icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0118 0Z" /></svg> },
-    { id: 'oldestVideo', label: 'Oldest Video', icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0118 0Z" /></svg> },
+    { id: 'title', label: 'Channel Name' },
+    { id: 'isMonetized', label: 'Monetized', icon: <span className="text-xs">💸</span> },
+    { id: 'engagementRate', label: 'Engagement', icon: <span className="text-xs">👍</span> },
+    { id: 'publishedAt', label: 'Created Date' },
+    { id: 'addedAt', label: 'Added Date' },
+    { id: 'subscriberCount', label: 'Subscribers' },
+    { id: 'viewCount', label: 'Total Views' },
+    { id: 'videoCount', label: 'Total Videos' },
+    { id: 'newestVideo', label: 'Newest Video' },
 ];
 
 export const ChannelsView: React.FC<ChannelsViewProps> = ({
-    currentSubView,
-    trackedChannels, channelGroups, onAddChannel, onSelectChannel, onRemoveChannel,
-    onSaveGroup, onDeleteGroup, isAdding, apiKeySet, settings, setChannelGroups,
+    trackedChannels, channelGroups, onAddChannel, onSelectChannel, onRemoveChannel, onUpdateChannel,
+    onSaveGroup, handleBulkUpdateChannels, isAdding, apiKeySet, settings, setChannelGroups,
     setEditingGroup, setIsGroupModalOpen, onOpenGroupsOverview
 }) => {
-    // States for All Channels view
     const [channelSearchQuery, setChannelSearchQuery] = useState('');
     const [selectedGroupFilterIds, setSelectedGroupFilterIds] = useState<string[]>([]);
+    const [selectedMonetizedFilters, setSelectedMonetizedFilters] = useState<string[]>([]);
+    const [selectedEngagementFilters, setSelectedEngagementFilters] = useState<string[]>([]);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [visibleChannelColumns, setVisibleChannelColumns] = useState<string[]>(ALL_CHANNEL_COLUMNS.map(c => c.id));
+    
+    const [visibleChannelColumns, setVisibleChannelColumns] = useState<string[]>(
+        ALL_CHANNEL_COLUMNS.filter(c => c.id !== 'addedAt' && c.id !== 'publishedAt').map(c => c.id)
+    );
+    
     const [selectedChannelIds, setSelectedChannelIds] = useState<string[]>([]);
     const [channelSortConfig, setChannelSortConfig] = useState<{ key: SortKey; direction: SortDirection }>({ key: 'subscriberCount', direction: 'desc' });
     
-    // Shared states for bulk actions
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [activeBulkMenu, setActiveBulkMenu] = useState<'group' | null>(null);
-    const [bulkSearchTerm, setBulkSearchTerm] = useState('');
+    const [activeBulkMenu, setActiveBulkMenu] = useState<'group' | 'monetized' | 'engagement' | null>(null);
     const [pendingBulkValues, setPendingBulkValues] = useState<string[]>([]);
 
-    // Reset selection and bulk action menus when switching sub-views
-    useEffect(() => {
-        setSelectedChannelIds([]);
-        setActiveBulkMenu(null);
-        setPendingBulkValues([]);
-    }, [currentSubView]);
+    // State cho Modal tổng quan trạng thái mới
+    const [isMonetizationOverviewOpen, setIsMonetizationOverviewOpen] = useState(false);
+    const [isEngagementOverviewOpen, setIsEngagementOverviewOpen] = useState(false);
 
-    // Close bulk menus or clear selection on Escape key
     useEffect(() => {
         const handleEsc = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
-                if (activeBulkMenu) {
-                    setActiveBulkMenu(null);
-                } else if (selectedChannelIds.length > 0) {
-                    setSelectedChannelIds([]);
-                } 
+                if (activeBulkMenu) setActiveBulkMenu(null);
+                else if (selectedChannelIds.length > 0) setSelectedChannelIds([]);
             }
         };
         window.addEventListener('keydown', handleEsc);
@@ -84,17 +83,21 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
     }, [activeBulkMenu, selectedChannelIds]);
 
     const groupOptions: Option[] = useMemo(() => channelGroups.map(g => ({ 
-        id: g.id, 
-        label: g.name, 
-        badge: g.channelIds.length // Show number of channels per group in (N) format
+        id: g.id, label: g.name, badge: g.channelIds.length
     })), [channelGroups]);
 
-    // Filtered and sorted channels for ChannelTable
     const filteredAndSortedChannels = useMemo(() => {
         let result = trackedChannels.filter(channel => {
             const matchesSearch = channel.title.toLowerCase().includes(channelSearchQuery.toLowerCase()) || channel.id.includes(channelSearchQuery);
             const matchesGroup = selectedGroupFilterIds.length === 0 || channelGroups.some(g => selectedGroupFilterIds.includes(g.id) && g.channelIds.includes(channel.id));
-            return matchesSearch && matchesGroup;
+            
+            const matchesMonetized = selectedMonetizedFilters.length === 0 || 
+                selectedMonetizedFilters.includes(channel.monetizationStatus || 'not_monetized');
+
+            const matchesEngagement = selectedEngagementFilters.length === 0 || 
+                selectedEngagementFilters.includes(channel.engagementStatus || 'good');
+
+            return matchesSearch && matchesGroup && matchesMonetized && matchesEngagement;
         });
 
         result.sort((a, b) => {
@@ -104,20 +107,14 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
             if (channelSortConfig.key === 'newestVideoDate') {
                 valA = a.newestVideo?.publishedAt ? new Date(a.newestVideo.publishedAt).getTime() : 0;
                 valB = b.newestVideo?.publishedAt ? new Date(b.newestVideo.publishedAt).getTime() : 0;
-            } else if (channelSortConfig.key === 'oldestVideoDate') {
-                valA = a.oldestVideo?.publishedAt ? new Date(a.oldestVideo.publishedAt).getTime() : 0;
-                valB = b.oldestVideo?.publishedAt ? new Date(b.oldestVideo.publishedAt).getTime() : 0;
-            } else if (channelSortConfig.key === 'publishedAt') {
-                valA = new Date(a.publishedAt).getTime();
-                valB = new Date(b.publishedAt).getTime();
             } else {
                 valA = a[channelSortConfig.key as keyof ChannelStats];
                 valB = b[channelSortConfig.key as keyof ChannelStats];
             }
 
             if (['subscriberCount', 'viewCount', 'videoCount'].includes(channelSortConfig.key)) {
-                valA = parseInt(valA as string, 10) || 0;
-                valB = parseInt(valB as string, 10) || 0;
+                valA = Number(valA) || 0;
+                valB = Number(valB) || 0;
             } else if (typeof valA === 'string') {
                 valA = valA.toLowerCase();
                 valB = (valB as string).toLowerCase();
@@ -129,8 +126,7 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
         });
 
         return result;
-    }, [trackedChannels, channelSearchQuery, selectedGroupFilterIds, channelGroups, channelSortConfig]);
-
+    }, [trackedChannels, channelSearchQuery, selectedGroupFilterIds, selectedMonetizedFilters, selectedEngagementFilters, channelGroups, channelSortConfig]);
 
     const handleConfirmDelete = () => {
         selectedChannelIds.forEach(id => onRemoveChannel(id));
@@ -138,8 +134,8 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
         setIsDeleteModalOpen(false);
     };
 
-    const commitBulkAction = () => {
-        if (pendingBulkValues.length === 0 || currentSubView !== 'allChannels') return;
+    const commitBulkAction = async () => {
+        if (pendingBulkValues.length === 0) return;
         
         if (activeBulkMenu === 'group') {
             pendingBulkValues.forEach(groupId => {
@@ -149,9 +145,15 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
                     onSaveGroup({ ...targetGroup, channelIds: combinedChannelIds });
                 }
             });
-            setSelectedChannelIds([]);
+        } else if (activeBulkMenu === 'monetized') {
+            const status = pendingBulkValues[0] as MonetizationStatus;
+            await handleBulkUpdateChannels(selectedChannelIds, { monetizationStatus: status });
+        } else if (activeBulkMenu === 'engagement') {
+            const status = pendingBulkValues[0] as EngagementStatus;
+            await handleBulkUpdateChannels(selectedChannelIds, { engagementStatus: status });
         }
         
+        setSelectedChannelIds([]);
         setActiveBulkMenu(null);
         setPendingBulkValues([]);
     };
@@ -164,49 +166,20 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
         }
     };
 
-    const renderGroupMenuHeader = (close: () => void) => (
-        <div className="flex flex-row items-center border-b border-gray-700/50">
-            <button 
-                onClick={(e) => {
-                    e.stopPropagation();
-                    setEditingGroup(null);
-                    setIsGroupModalOpen(true);
-                    close(); // Ẩn dropdown sau khi nhấn
-                }}
-                className="flex-1 flex items-center justify-center gap-2 py-3 text-[11px] font-bold text-indigo-400 hover:text-indigo-300 hover:bg-white/5 transition-all"
-            >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
-                Create
-            </button>
-            <div className="w-px h-6 bg-gray-700/50"></div>
-            <button 
-                onClick={(e) => {
-                    e.stopPropagation();
-                    onOpenGroupsOverview();
-                    close(); // Ẩn dropdown sau khi nhấn
-                }}
-                className="flex-1 flex items-center justify-center gap-2 py-3 text-[11px] font-bold text-emerald-400 hover:text-emerald-300 hover:bg-white/5 transition-all"
-            >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                Manage ({channelGroups.length})
-            </button>
-        </div>
-    );
-
     return (
         <div className="w-full space-y-6 pb-20 relative">
             <div className="bg-gray-800/20 p-4 rounded-2xl border border-gray-700/50 space-y-4 shadow-xl animate-fade-in">
                 <div className="flex flex-row gap-4 items-center h-11">
                     <div className="relative flex-grow h-full">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                         </div>
                         <input 
                             type="text" 
                             value={channelSearchQuery} 
                             onChange={(e) => setChannelSearchQuery(e.target.value)} 
-                            placeholder="Search channels by name or ID..." 
-                            className="w-full h-full pl-11 pr-4 bg-gray-900 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-colors duration-200 text-sm font-medium outline-none" 
+                            placeholder="Search channels..." 
+                            className="w-full h-full pl-11 pr-4 bg-gray-900 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 text-sm font-medium outline-none" 
                         />
                     </div>
                     <MultiSelectDropdown 
@@ -215,101 +188,122 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
                         selectedIds={visibleChannelColumns} 
                         onChange={setVisibleChannelColumns} 
                         className="w-40 h-full"
-                        icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 4.5v15m6-15v15m-10.875 0h15.75c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H4.125C3.504 4.5 3 5.004 3 5.625v12.75c0 .621.504 1.125 1.125 1.125Z" /></svg>}
                     />
-                    <button onClick={() => setIsAddModalOpen(true)} className="h-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-6 rounded-xl transition-all flex items-center justify-center gap-2 whitespace-nowrap border border-indigo-500 shadow-lg shadow-indigo-500/20 active:scale-95">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
-                        </svg>
+                    <button onClick={() => setIsAddModalOpen(true)} className="h-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-6 rounded-xl transition-all flex items-center justify-center gap-2 border border-indigo-500 shadow-lg shadow-indigo-500/20 active:scale-95">
                         Add Channel
                     </button>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <MultiSelectDropdown 
-                        label="Groups" 
+                        label="Filter Groups" 
                         options={groupOptions} 
                         selectedIds={selectedGroupFilterIds} 
                         onChange={setSelectedGroupFilterIds} 
                         className="w-full h-11"
-                        icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>}
-                        header={(close) => renderGroupMenuHeader(close)}
+                        icon={<span className="text-xs">📂</span>}
+                        onCreateClick={() => { setEditingGroup(null); setIsGroupModalOpen(true); }}
+                        onManageClick={onOpenGroupsOverview}
+                        manageCount={channelGroups.length}
+                    />
+                    <MultiSelectDropdown 
+                        label="Kiếm tiền 💸" 
+                        options={MONETIZATION_OPTIONS.map(opt => ({ 
+                            id: opt.id, label: opt.label, 
+                            badge: trackedChannels.filter(c => (c.monetizationStatus || 'not_monetized') === opt.id).length 
+                        }))} 
+                        selectedIds={selectedMonetizedFilters} 
+                        onChange={setSelectedMonetizedFilters} 
+                        className="w-full h-11"
+                        icon={<span className="text-xs">💸</span>}
+                        onCreateClick={() => { /* Placeholder for creating status logic */ }}
+                        onManageClick={() => setIsMonetizationOverviewOpen(true)}
+                        manageCount={MONETIZATION_OPTIONS.length}
+                    />
+                    <MultiSelectDropdown 
+                        label="Tương tác 👍" 
+                        options={ENGAGEMENT_OPTIONS.map(opt => ({ 
+                            id: opt.id, label: opt.label,
+                            badge: trackedChannels.filter(c => (c.engagementStatus || 'good') === opt.id).length 
+                        }))} 
+                        selectedIds={selectedEngagementFilters} 
+                        onChange={setSelectedEngagementFilters} 
+                        className="w-full h-11"
+                        icon={<span className="text-xs">👍</span>}
+                        onCreateClick={() => { /* Placeholder for creating status logic */ }}
+                        onManageClick={() => setIsEngagementOverviewOpen(true)}
+                        manageCount={ENGAGEMENT_OPTIONS.length}
                     />
                 </div>
             </div>
             
-            <div className="animate-fade-in">
-                <SummaryCards channels={filteredAndSortedChannels} />
-            </div>
+            <SummaryCards channels={filteredAndSortedChannels} />
 
-            <div className="animate-fade-in">
-                <ChannelTable 
-                    channels={filteredAndSortedChannels} 
-                    sortConfig={channelSortConfig} 
-                    onSortChange={(k) => setChannelSortConfig(p => ({ key: k, direction: p.key === k && p.direction === 'desc' ? 'asc' : 'desc' }))} 
-                    onSelect={onSelectChannel} 
-                    onRemove={onRemoveChannel} 
-                    visibleColumns={visibleChannelColumns} 
-                    selectedIds={selectedChannelIds} 
-                    onToggleRow={(id) => setSelectedChannelIds(p => p.includes(id) ? p.filter(i => i !== id) : [...p, id])} 
-                    onToggleAll={() => setSelectedChannelIds(selectedChannelIds.length === filteredAndSortedChannels.length ? [] : filteredAndSortedChannels.map(c => c.id))} 
-                    isAllSelected={filteredAndSortedChannels.length > 0 && selectedChannelIds.length === filteredAndSortedChannels.length} 
-                />
-            </div>
+            <ChannelTable 
+                channels={filteredAndSortedChannels} 
+                sortConfig={channelSortConfig} 
+                onSortChange={(k) => setChannelSortConfig(p => ({ key: k, direction: p.key === k && p.direction === 'desc' ? 'asc' : 'desc' }))} 
+                onSelect={onSelectChannel} 
+                onRemove={onRemoveChannel} 
+                onUpdateChannel={onUpdateChannel}
+                visibleColumns={visibleChannelColumns} 
+                selectedIds={selectedChannelIds} 
+                onToggleRow={(id) => setSelectedChannelIds(p => p.includes(id) ? p.filter(i => i !== id) : [...p, id])} 
+                onToggleAll={() => setSelectedChannelIds(selectedChannelIds.length === filteredAndSortedChannels.length ? [] : filteredAndSortedChannels.map(c => c.id))} 
+                isAllSelected={filteredAndSortedChannels.length > 0 && selectedChannelIds.length === filteredAndSortedChannels.length} 
+            />
 
             {selectedChannelIds.length > 0 && (
                 <BulkActionBar count={selectedChannelIds.length} onClear={() => setSelectedChannelIds([])} onDelete={() => setIsDeleteModalOpen(true)}>
+                    {/* Add to Group */}
                     <div className="relative">
-                        <button onClick={() => { setActiveBulkMenu(activeBulkMenu === 'group' ? null : 'group'); setBulkSearchTerm(''); setPendingBulkValues([]); }} className={`flex items-center gap-2 transition-all hover:scale-105 ${activeBulkMenu === 'group' ? 'text-indigo-400' : 'text-gray-300 hover:text-white'}`}>
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
-                            </svg>
-                            <span className="text-sm font-bold">Add Group</span>
+                        <button onClick={(e) => { e.stopPropagation(); setActiveBulkMenu(activeBulkMenu === 'group' ? null : 'group'); setPendingBulkValues([]); }} className={`flex items-center gap-2 text-sm font-bold ${activeBulkMenu === 'group' ? 'text-indigo-400' : 'text-gray-300'}`}>
+                            <span>📂 Add Group</span>
                         </button>
                         {activeBulkMenu === 'group' && (
-                            <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 w-64 bg-[#1e293b] border-2 border-gray-700 rounded-xl shadow-2xl overflow-hidden flex flex-col">
-                                <div className="p-2 border-b border-gray-700 bg-black/20">
-                                    <input type="text" autoFocus placeholder="Search Group..." value={bulkSearchTerm} onChange={e => setBulkSearchTerm(e.target.value)} className="w-full bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white outline-none focus:ring-1 focus:ring-indigo-500/50" />
-                                </div>
+                            <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 w-64 bg-[#1e293b] border-2 border-gray-700 rounded-xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
                                 <div className="max-h-48 overflow-y-auto py-1">
-                                    {channelGroups.length > 0 ? (
-                                        <>
-                                            {channelGroups.filter(g => g.name.toLowerCase().includes(bulkSearchTerm.toLowerCase())).map(g => (
-                                                <button key={g.id} onClick={() => togglePendingValue(g.id)} className={`w-full text-left px-4 py-2 text-xs truncate flex justify-between items-center transition-colors ${pendingBulkValues.includes(g.id) ? 'bg-indigo-600/30 text-white' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}>
-                                                    <div className="flex items-center gap-2 truncate">
-                                                        <span className="truncate">{g.name}</span>
-                                                    </div>
-                                                    {pendingBulkValues.includes(g.id) && <span className="text-indigo-400 font-bold ml-2">✓</span>}
-                                                </button>
-                                            ))}
-                                        </>
-                                    ) : (
-                                        <div className="px-4 py-6 text-center">
-                                            <p className="text-[10px] text-gray-500 italic">No groups found</p>
-                                        </div>
-                                    )}
+                                    {channelGroups.map(g => (
+                                        <button key={g.id} onClick={() => togglePendingValue(g.id)} className={`w-full text-left px-4 py-2 text-xs transition-colors flex justify-between items-center ${pendingBulkValues.includes(g.id) ? 'bg-indigo-600/30 text-white' : 'text-gray-400 hover:bg-white/5'}`}>
+                                            <span className="truncate">{g.name}</span>
+                                            {pendingBulkValues.includes(g.id) && <span className="text-indigo-400 font-bold ml-2">✓</span>}
+                                        </button>
+                                    ))}
                                 </div>
-                                <div className="p-1 border-t border-gray-700 bg-gray-900/50">
-                                    <button 
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setEditingGroup(null);
-                                            setIsGroupModalOpen(true);
-                                            setActiveBulkMenu(null);
-                                        }}
-                                        className="w-full flex items-center justify-center gap-2 py-2 text-[10px] font-bold text-indigo-400 hover:text-indigo-300 hover:bg-white/5 transition-all"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
-                                        </svg>
-                                        Create Group
+                                <button onClick={commitBulkAction} disabled={pendingBulkValues.length === 0} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 transition-all">Apply Group</button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Set Monetized */}
+                    <div className="relative">
+                        <button onClick={(e) => { e.stopPropagation(); setActiveBulkMenu(activeBulkMenu === 'monetized' ? null : 'monetized'); setPendingBulkValues([]); }} className={`flex items-center gap-2 text-sm font-bold ${activeBulkMenu === 'monetized' ? 'text-indigo-400' : 'text-gray-300'}`}>
+                            <span>💸 Kiếm tiền</span>
+                        </button>
+                        {activeBulkMenu === 'monetized' && (
+                            <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 w-48 bg-[#1e293b] border-2 border-gray-700 rounded-xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+                                {MONETIZATION_OPTIONS.map(opt => (
+                                    <button key={opt.id} onClick={() => { togglePendingValue(opt.id); }} className={`w-full text-left px-4 py-2 text-xs transition-colors ${pendingBulkValues.includes(opt.id) ? 'bg-indigo-600/30 text-white' : 'text-gray-400 hover:bg-white/5'}`}>
+                                        {opt.label}
                                     </button>
-                                </div>
-                                {channelGroups.length > 0 && (
-                                    <button onClick={commitBulkAction} disabled={pendingBulkValues.length === 0} className="m-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold py-2 rounded-lg transition-all active:scale-95 shadow-lg flex items-center justify-center gap-2">
-                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-                                        Add to {pendingBulkValues.length} {pendingBulkValues.length === 1 ? 'Group' : 'Groups'}
+                                ))}
+                                <button onClick={commitBulkAction} disabled={pendingBulkValues.length === 0} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2">Apply</button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Set Engagement */}
+                    <div className="relative">
+                        <button onClick={(e) => { e.stopPropagation(); setActiveBulkMenu(activeBulkMenu === 'engagement' ? null : 'engagement'); setPendingBulkValues([]); }} className={`flex items-center gap-2 text-sm font-bold ${activeBulkMenu === 'engagement' ? 'text-indigo-400' : 'text-gray-300'}`}>
+                            <span>👍 Tương tác</span>
+                        </button>
+                        {activeBulkMenu === 'engagement' && (
+                            <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 w-48 bg-[#1e293b] border-2 border-gray-700 rounded-xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+                                {ENGAGEMENT_OPTIONS.map(opt => (
+                                    <button key={opt.id} onClick={() => { togglePendingValue(opt.id); }} className={`w-full text-left px-4 py-2 text-xs transition-colors ${pendingBulkValues.includes(opt.id) ? 'bg-indigo-600/30 text-white' : 'text-gray-400 hover:bg-white/5'}`}>
+                                        {opt.label}
                                     </button>
-                                )}
+                                ))}
+                                <button onClick={commitBulkAction} disabled={pendingBulkValues.length === 0} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2">Apply</button>
                             </div>
                         )}
                     </div>
@@ -317,12 +311,24 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
             )}
 
             <AddChannelModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onAddChannel={onAddChannel} isDisabled={!apiKeySet || isAdding} isAdding={isAdding} />
-            <DeleteConfirmModal 
-                isOpen={isDeleteModalOpen} 
-                onClose={() => setIsDeleteModalOpen(false)} 
-                onConfirm={handleConfirmDelete} 
-                count={selectedChannelIds.length} 
-                itemName={'channel'} 
+            <DeleteConfirmModal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} onConfirm={handleConfirmDelete} count={selectedChannelIds.length} itemName={'channel'} />
+            
+            {/* Status Modals */}
+            <StatusOverviewModal 
+                isOpen={isMonetizationOverviewOpen}
+                onClose={() => setIsMonetizationOverviewOpen(false)}
+                type="monetization"
+                channels={trackedChannels}
+                options={MONETIZATION_OPTIONS}
+                onUpdateChannel={onUpdateChannel}
+            />
+            <StatusOverviewModal 
+                isOpen={isEngagementOverviewOpen}
+                onClose={() => setIsEngagementOverviewOpen(false)}
+                type="engagement"
+                channels={trackedChannels}
+                options={ENGAGEMENT_OPTIONS}
+                onUpdateChannel={onUpdateChannel}
             />
         </div>
     );
