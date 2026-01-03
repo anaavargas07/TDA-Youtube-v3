@@ -132,6 +132,7 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                 sortKey="title" 
                                 currentSort={sortConfig} 
                                 onSort={onSortChange} 
+                                align="left"
                                 className="w-1/5 border-b border-gray-700/50"
                                 icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
                             />
@@ -143,7 +144,7 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                 currentSort={sortConfig} 
                                 onSort={onSortChange}
                                 align="center"
-                                className="w-[180px] border-b border-gray-700/50"
+                                className="w-[165px] border-b border-gray-700/50"
                                 icon={<span className="text-sm">💸</span>}
                             />
                         )}
@@ -154,8 +155,18 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                 currentSort={sortConfig} 
                                 onSort={onSortChange}
                                 align="center"
-                                className="w-[150px] border-b border-gray-700/50"
+                                className="w-[145px] border-b border-gray-700/50"
                                 icon={<span className="text-sm">👍</span>}
+                            />
+                        )}
+                        {isVisible('publishedAt') && (
+                            <SortableHeader 
+                                label="Created Date" 
+                                sortKey="publishedAt" 
+                                currentSort={sortConfig} 
+                                onSort={onSortChange} 
+                                className="w-[130px] border-b border-gray-700/50"
+                                icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
                             />
                         )}
                         {isVisible('subscriberCount') && (
@@ -176,6 +187,16 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                 onSort={onSortChange} 
                                 className="w-[130px] border-b border-gray-700/50"
                                 icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>}
+                            />
+                        )}
+                         {isVisible('videoCount') && (
+                            <SortableHeader 
+                                label="Total Videos" 
+                                sortKey="videoCount" 
+                                currentSort={sortConfig} 
+                                onSort={onSortChange} 
+                                className="w-[130px] border-b border-gray-700/50"
+                                icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
                             />
                         )}
                         {isVisible('newestVideo') && (
@@ -252,7 +273,7 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                                 value={channel.monetizationStatus || 'not_monetized'}
                                                 options={MONETIZATION_OPTIONS}
                                                 onChange={(val) => onUpdateChannel(channel.id, { monetizationStatus: val as MonetizationStatus })}
-                                                className="w-[160px]"
+                                                className="w-[150px]"
                                             />
                                         </div>
                                     </td>
@@ -266,6 +287,14 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                                 onChange={(val) => onUpdateChannel(channel.id, { engagementStatus: val as EngagementStatus })}
                                                 className="w-[130px]"
                                             />
+                                        </div>
+                                    </td>
+                                )}
+                                {isVisible('publishedAt') && (
+                                    <td className="px-4 py-2.5 border-b border-gray-700/50">
+                                        <div className="flex flex-col text-center">
+                                            <span className="text-[11px] font-bold text-gray-200">{new Date(channel.publishedAt).toLocaleDateString()}</span>
+                                            <span className="text-[9px] text-gray-500 font-medium">{formatRelativeTime(channel.publishedAt)}</span>
                                         </div>
                                     </td>
                                 )}
@@ -288,6 +317,17 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                             label={formatNumber(channel.viewCount)}
                                             rawValue={channel.viewCount}
                                             gradientClass="bg-gradient-to-r from-emerald-500 to-teal-400"
+                                        />
+                                    </td>
+                                )}
+                                {isVisible('videoCount') && (
+                                    <td className="px-4 py-2.5 align-middle border-b border-gray-700/50">
+                                        <ModernStat 
+                                            value={parseInt(channel.videoCount, 10) || 0} 
+                                            max={maxValues.videos} 
+                                            label={formatNumber(channel.videoCount)}
+                                            rawValue={channel.videoCount}
+                                            gradientClass="bg-gradient-to-r from-purple-500 to-pink-400"
                                         />
                                     </td>
                                 )}

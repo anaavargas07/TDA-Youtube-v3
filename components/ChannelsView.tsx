@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { ChannelTable, MONETIZATION_OPTIONS, ENGAGEMENT_OPTIONS } from './ChannelTable';
 import { MultiSelectDropdown, Option } from './MultiSelectDropdown';
@@ -6,7 +5,7 @@ import { AddChannelModal } from './AddChannelModal';
 import { SummaryCards } from './SummaryCards';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
 import { BulkActionBar } from './BulkActionBar';
-import { StatusOverviewModal } from './StatusOverviewModal'; // New
+import { StatusOverviewModal } from './StatusOverviewModal';
 import type { ChannelStats, ChannelGroup, AppSettings, MonetizationStatus, EngagementStatus } from '../types';
 import type { AddChannelResult } from '../hooks/useAppData';
 
@@ -57,7 +56,7 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     
     const [visibleChannelColumns, setVisibleChannelColumns] = useState<string[]>(
-        ALL_CHANNEL_COLUMNS.filter(c => c.id !== 'addedAt' && c.id !== 'publishedAt').map(c => c.id)
+        ALL_CHANNEL_COLUMNS.filter(c => c.id !== 'addedAt').map(c => c.id)
     );
     
     const [selectedChannelIds, setSelectedChannelIds] = useState<string[]>([]);
@@ -67,7 +66,6 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
     const [activeBulkMenu, setActiveBulkMenu] = useState<'group' | 'monetized' | 'engagement' | null>(null);
     const [pendingBulkValues, setPendingBulkValues] = useState<string[]>([]);
 
-    // State cho Modal tổng quan trạng thái mới
     const [isMonetizationOverviewOpen, setIsMonetizationOverviewOpen] = useState(false);
     const [isEngagementOverviewOpen, setIsEngagementOverviewOpen] = useState(false);
 
@@ -190,12 +188,16 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
                         className="w-40 h-full"
                     />
                     <button onClick={() => setIsAddModalOpen(true)} className="h-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-6 rounded-xl transition-all flex items-center justify-center gap-2 border border-indigo-500 shadow-lg shadow-indigo-500/20 active:scale-95">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+                        </svg>
                         Add Channel
                     </button>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Updated grid to grid-cols-6 for exactly 6 items per row */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
                     <MultiSelectDropdown 
-                        label="Filter Groups" 
+                        label="Groups" 
                         options={groupOptions} 
                         selectedIds={selectedGroupFilterIds} 
                         onChange={setSelectedGroupFilterIds} 
@@ -206,7 +208,7 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
                         manageCount={channelGroups.length}
                     />
                     <MultiSelectDropdown 
-                        label="Kiếm tiền 💸" 
+                        label="Monetized" 
                         options={MONETIZATION_OPTIONS.map(opt => ({ 
                             id: opt.id, label: opt.label, 
                             badge: trackedChannels.filter(c => (c.monetizationStatus || 'not_monetized') === opt.id).length 
@@ -215,12 +217,11 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
                         onChange={setSelectedMonetizedFilters} 
                         className="w-full h-11"
                         icon={<span className="text-xs">💸</span>}
-                        onCreateClick={() => { /* Placeholder for creating status logic */ }}
                         onManageClick={() => setIsMonetizationOverviewOpen(true)}
                         manageCount={MONETIZATION_OPTIONS.length}
                     />
                     <MultiSelectDropdown 
-                        label="Tương tác 👍" 
+                        label="Engagement" 
                         options={ENGAGEMENT_OPTIONS.map(opt => ({ 
                             id: opt.id, label: opt.label,
                             badge: trackedChannels.filter(c => (c.engagementStatus || 'good') === opt.id).length 
@@ -229,7 +230,6 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
                         onChange={setSelectedEngagementFilters} 
                         className="w-full h-11"
                         icon={<span className="text-xs">👍</span>}
-                        onCreateClick={() => { /* Placeholder for creating status logic */ }}
                         onManageClick={() => setIsEngagementOverviewOpen(true)}
                         manageCount={ENGAGEMENT_OPTIONS.length}
                     />
@@ -254,7 +254,6 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
 
             {selectedChannelIds.length > 0 && (
                 <BulkActionBar count={selectedChannelIds.length} onClear={() => setSelectedChannelIds([])} onDelete={() => setIsDeleteModalOpen(true)}>
-                    {/* Add to Group */}
                     <div className="relative">
                         <button onClick={(e) => { e.stopPropagation(); setActiveBulkMenu(activeBulkMenu === 'group' ? null : 'group'); setPendingBulkValues([]); }} className={`flex items-center gap-2 text-sm font-bold ${activeBulkMenu === 'group' ? 'text-indigo-400' : 'text-gray-300'}`}>
                             <span>📂 Add Group</span>
@@ -274,10 +273,9 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
                         )}
                     </div>
 
-                    {/* Set Monetized */}
                     <div className="relative">
                         <button onClick={(e) => { e.stopPropagation(); setActiveBulkMenu(activeBulkMenu === 'monetized' ? null : 'monetized'); setPendingBulkValues([]); }} className={`flex items-center gap-2 text-sm font-bold ${activeBulkMenu === 'monetized' ? 'text-indigo-400' : 'text-gray-300'}`}>
-                            <span>💸 Kiếm tiền</span>
+                            <span>💸 Monetized</span>
                         </button>
                         {activeBulkMenu === 'monetized' && (
                             <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 w-48 bg-[#1e293b] border-2 border-gray-700 rounded-xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
@@ -291,10 +289,9 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
                         )}
                     </div>
 
-                    {/* Set Engagement */}
                     <div className="relative">
                         <button onClick={(e) => { e.stopPropagation(); setActiveBulkMenu(activeBulkMenu === 'engagement' ? null : 'engagement'); setPendingBulkValues([]); }} className={`flex items-center gap-2 text-sm font-bold ${activeBulkMenu === 'engagement' ? 'text-indigo-400' : 'text-gray-300'}`}>
-                            <span>👍 Tương tác</span>
+                            <span>👍 Engagement</span>
                         </button>
                         {activeBulkMenu === 'engagement' && (
                             <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 w-48 bg-[#1e293b] border-2 border-gray-700 rounded-xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
@@ -313,7 +310,6 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
             <AddChannelModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onAddChannel={onAddChannel} isDisabled={!apiKeySet || isAdding} isAdding={isAdding} />
             <DeleteConfirmModal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} onConfirm={handleConfirmDelete} count={selectedChannelIds.length} itemName={'channel'} />
             
-            {/* Status Modals */}
             <StatusOverviewModal 
                 isOpen={isMonetizationOverviewOpen}
                 onClose={() => setIsMonetizationOverviewOpen(false)}

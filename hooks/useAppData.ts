@@ -60,7 +60,7 @@ export const useAppData = (session: any) => {
                     thumbnailUrl: c.thumbnail_url, subscriberCount: c.subscriber_count, videoCount: c.video_count,
                     viewCount: c.view_count, publishedAt: c.published_at, uploadsPlaylistId: c.uploads_playlist_id,
                     history: c.history || [], status: c.status as any, addedAt: new Date(c.added_at).getTime(),
-                    newestVideo: c.newest_video, oldestVideo: c.oldest_video,
+                    newestVideo: c.newest_video, oldest_video: c.oldest_video,
                     lastRefreshedAt: c.last_refreshed_at ? new Date(c.last_refreshed_at).getTime() : undefined,
                     engagementStatus: c.engagement_status || 'good',
                     monetizationStatus: c.monetization_status || 'not_monetized'
@@ -83,7 +83,7 @@ export const useAppData = (session: any) => {
                     setMovies(moviesData.map(m => ({
                         id: m.id, name: m.name, addedAt: m.added_at, channel3DId: m.channel_3d_id || '', 
                         channel2DId: m.channel_2d_id || '', status: m.status as any, note: m.note || '',
-                        channel3DIds: m.channel_3d_ids || [], channel2DIds: m.channel_2d_ids || [] 
+                        channel3DIds: m.channel_3_ids || [], channel2DIds: m.channel_2_ids || [] 
                     })));
                 }
             } catch (err) { setError("Failed to sync data."); } finally { setIsLoading(false); }
@@ -91,35 +91,17 @@ export const useAppData = (session: any) => {
         loadUserData();
     }, [session?.user?.id]);
 
-    // --- Lazy Fetcher ---
-    const fetchVideoInfoForChannels = useCallback(async (channels: ChannelStats[]) => {
-        if (!apiKeySet || channels.length === 0 || !session) return;
-        const channelsToFetch = channels.filter(c => c.status !== 'terminated' && (!c.newestVideo || !c.oldestVideo));
-        
-        for (const channel of channelsToFetch) {
-            try {
-                const [newest, oldest] = await Promise.all([
-                    getAbsoluteNewestVideo(channel.uploadsPlaylistId),
-                    getAbsoluteOldestVideo(channel.id, channel.publishedAt)
-                ]);
-                
-                setTrackedChannels(prev => prev.map(c => c.id === channel.id ? { ...c, newestVideo: newest, oldestVideo: oldest } : c));
-                await supabase.from('tracked_channels').update({ newest_video: newest, oldest_video: oldest }).eq('id', channel.id).eq('user_id', session.user.id);
-            } catch (err) { console.error(`Error fetching videos for ${channel.title}`, err); }
-        }
-    }, [apiKeySet, session]);
-
-    useEffect(() => {
-        if (trackedChannels.length > 0 && apiKeySet) fetchVideoInfoForChannels(trackedChannels);
-    }, [trackedChannels.length, apiKeySet, fetchVideoInfoForChannels]);
-
     const handleRefreshChannels = async () => {
         if (isRefreshing || !apiKeySet || !session || trackedChannels.length === 0) return;
         setIsRefreshing(true);
         setError('');
         try {
             const today = getTodaysDateString();
-            const activeChannels = trackedChannels.filter(c => c.status !== 'terminated');
+            const activeChannels = trackedChannels.filter(c => 
+                c.status !== 'terminated' && 
+                c.uploadsPlaylistId && 
+                c.uploadsPlaylistId.trim() !== ''
+            );
             const channelIds = activeChannels.map(c => c.id);
             
             const updatedStatsList = await getChannelStatsBatch(channelIds);
@@ -130,10 +112,21 @@ export const useAppData = (session: any) => {
                 const existing = trackedChannels.find(c => c.id === stats.id);
                 if (!existing) continue;
 
-                const newest = await getAbsoluteNewestVideo(existing.uploadsPlaylistId);
+                // QUOTA OPTIMIZATION: Only fetch newest video if video count changed or missing
+                let newest = existing.newestVideo;
+                if (!newest || existing.videoCount !== stats.videoCount) {
+                    newest = await getAbsoluteNewestVideo(existing.uploadsPlaylistId);
+                }
 
                 const newHistory = [...(existing.history || [])];
-                const historyEntry = { date: today, timestamp, subscriberCount: stats.subscriberCount!, viewCount: stats.viewCount!, videoCount: stats.videoCount! };
+                const historyEntry = { 
+                    date: today, 
+                    timestamp, 
+                    subscriberCount: stats.subscriberCount!, 
+                    viewCount: stats.viewCount!, 
+                    videoCount: stats.videoCount! 
+                };
+                
                 if (newHistory.length > 0 && newHistory[newHistory.length - 1].date === today) {
                     newHistory[newHistory.length - 1] = historyEntry;
                 } else {
@@ -152,7 +145,7 @@ export const useAppData = (session: any) => {
                  setTrackedChannels(prev => prev.map(c => {
                     const res = results.find(r => r.id === c.id);
                     return res ? { 
-                        ...c, subscriberCount: res.subscriber_count!, viewCount: res.view_count!, videoCount: res.video_count!,
+                        ...c, subscriberCount: res.subscriber_count!, viewCount: res.view_count!, video_count: res.video_count!,
                         history: res.history, lastRefreshedAt: timestamp, newestVideo: res.newest_video 
                     } : c;
                  }));
@@ -218,28 +211,25 @@ export const useAppData = (session: any) => {
 
     const handleBulkUpdateChannels = async (ids: string[], updates: Partial<ChannelStats>) => {
         if (!session || ids.length === 0) return;
-        
         const dbUpdates: any = {};
         if (updates.monetizationStatus !== undefined) dbUpdates.monetization_status = updates.monetizationStatus;
         if (updates.engagementStatus !== undefined) dbUpdates.engagement_status = updates.engagementStatus;
-        
         try {
             setTrackedChannels(prev => prev.map(c => ids.includes(c.id) ? { ...c, ...updates } : c));
-            const { error } = await supabase.from('tracked_channels').update(dbUpdates).in('id', ids);
+            const { error } = await supabase.from('tracked_channels').update(dbUpdates).in('id', ids).eq('user_id', session.user.id);
             if (error) throw error;
-        } catch (err: any) {
-            setError(`Failed to bulk update channels: ${err.message}`);
-        }
+        } catch (err: any) { setError(`Failed to bulk update: ${err.message}`); }
     };
 
     const handleUpdateChannel = async (id: string, updates: Partial<ChannelStats>) => {
         if (!session) return;
+        const dbUpdates: any = {};
+        if (updates.monetizationStatus !== undefined) dbUpdates.monetization_status = updates.monetizationStatus;
+        if (updates.engagementStatus !== undefined) dbUpdates.engagement_status = updates.engagementStatus;
         setTrackedChannels(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
         try {
-            const dbUpdates: any = {};
-            if (updates.monetizationStatus) dbUpdates.monetization_status = updates.monetizationStatus;
-            if (updates.engagementStatus) dbUpdates.engagement_status = updates.engagementStatus;
-            await supabase.from('tracked_channels').update(dbUpdates).eq('id', id);
+            const { error } = await supabase.from('tracked_channels').update(dbUpdates).eq('id', id).eq('user_id', session.user.id);
+            if (error) throw error;
         } catch (err: any) { setError("Failed to save update."); }
     };
 
@@ -271,20 +261,20 @@ export const useAppData = (session: any) => {
             if (updates.channel3DIds) { dbUpdates.channel_3_ids = updates.channel3DIds; dbUpdates.channel_3d_id = updates.channel3DIds[0] || ''; }
             if (updates.channel2DIds) { dbUpdates.channel_2_ids = updates.channel2DIds; dbUpdates.channel_2d_id = updates.channel2DIds[0] || ''; }
             if (updates.note !== undefined) dbUpdates.note = updates.note;
-            await supabase.from('movies').update(dbUpdates).eq('id', id);
+            await supabase.from('movies').update(dbUpdates).eq('id', id).eq('user_id', session.user.id);
         } catch (err: any) { setError("Failed to save update."); }
     };
 
     const handleBulkUpdateMovieStatus = async (ids: string[], status: MovieStatus) => {
         if (!session || ids.length === 0) return;
         setMovies(prev => prev.map(m => ids.includes(m.id) ? { ...m, status } : m));
-        try { await supabase.from('movies').update({ status }).in('id', ids); } catch (err: any) { setError("Failed to save bulk updates."); }
+        try { await supabase.from('movies').update({ status }).in('id', ids).eq('user_id', session.user.id); } catch (err: any) { setError("Failed to save bulk updates."); }
     };
 
     const handleDeleteMovie = async (id: string) => {
         if (!session) return;
-        setMovies(prev => prev.filter(m => m.id !== id));
-        try { await supabase.from('movies').delete().eq('id', id); } catch (err: any) {}
+        setMovies(prev => prev.filter(m => ! (m.id === id)));
+        try { await supabase.from('movies').delete().eq('id', id).eq('user_id', session.user.id); } catch (err: any) {}
     };
     
     const handleSaveGroup = async (group: Omit<ChannelGroup, 'id' | 'color'> & { id?: string; color?: string }) => {
@@ -296,29 +286,22 @@ export const useAppData = (session: any) => {
             channel_ids: group.channelIds,
             color: color
         };
-        
         try {
             if (group.id) {
-                await supabase.from('channel_groups').update(payload).eq('id', group.id);
+                await supabase.from('channel_groups').update(payload).eq('id', group.id).eq('user_id', session.user.id);
                 setChannelGroups(prev => prev.map(g => g.id === group.id ? { ...g, ...group, id: group.id!, color: color } : g));
             } else {
                 const { data, error } = await supabase.from('channel_groups').insert(payload).select();
                 if (error) throw error;
                 if (data && data[0]) {
                     setChannelGroups(prev => [...prev, { id: data[0].id, name: data[0].name, channelIds: data[0].channel_ids, color: data[0].color, createdAt: data[0].created_at }]);
-                } else {
-                    // Fallback if select doesn't return data for some reason
-                    setChannelGroups(prev => [...prev, { ...group, id: crypto.randomUUID(), color: color, createdAt: new Date().toISOString() } as ChannelGroup]);
                 }
             }
-        } catch (err: any) {
-            console.error("Failed to save group:", err);
-            setError(`Failed to save group: ${err.message}`);
-        }
+        } catch (err: any) { setError(`Failed to save group: ${err.message}`); }
     };
 
     const handleDeleteGroup = async (id: string) => {
-         await supabase.from('channel_groups').delete().eq('id', id);
+         await supabase.from('channel_groups').delete().eq('id', id).eq('user_id', session.user.id);
          setChannelGroups(prev => prev.filter(g => g.id !== id));
     };
 

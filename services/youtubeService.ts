@@ -101,6 +101,15 @@ const fetchYouTubeAPI = async (endpoint: string, params: Record<string, string>)
                 const message = errorData.error?.message || `API Request failed with status ${response.status}`;
                 lastError = new Error(message);
                 
+                // If it's a 404 (Not Found), it's likely a data issue, not a key issue. 
+                // However, we still retry once or twice in case of API glitches.
+                if (response.status === 404) {
+                   // Optimization: If it's a playlist not found error, it's definitive.
+                   if (message.toLowerCase().includes('playlist') || message.toLowerCase().includes('not found')) {
+                       throw lastError; 
+                   }
+                }
+
                 // If it's a key-related error, try next key
                 if (reason === 'quotaExceeded' || reason === 'dailyLimitExceeded' || response.status === 403 || response.status === 429) {
                     continue; 
@@ -116,7 +125,9 @@ const fetchYouTubeAPI = async (endpoint: string, params: Record<string, string>)
             return await response.json();
 
         } catch (error: any) {
-            // "Failed to fetch" is usually a TypeError. We catch it and try the next key.
+            // If we've already thrown a specific non-retryable error, stop here
+            if (error.message.includes('not found')) throw error;
+
             lastError = error;
             console.warn(`Key index ${keyIndex} failed: ${error.message}. Trying next key...`);
             continue;
@@ -156,6 +167,7 @@ async function resolveChannelId(channelIdentifier: string): Promise<string> {
 }
 
 export const getAbsoluteOldestVideo = async (channelId: string, channelPublishedAt: string): Promise<VideoStat | null> => {
+    if (!channelId || channelId === 'INVALID_ID') return null;
     try {
         const startDate = new Date(channelPublishedAt);
         startDate.setHours(startDate.getHours() - 12);
@@ -188,6 +200,11 @@ export const getAbsoluteOldestVideo = async (channelId: string, channelPublished
 };
 
 export const getAbsoluteNewestVideo = async (uploadsPlaylistId: string): Promise<VideoStat | null> => {
+    // FIX: Guard against missing or empty playlist ID
+    if (!uploadsPlaylistId || uploadsPlaylistId.trim() === '') {
+        return null;
+    }
+
     try {
         const playlistData = await fetchYouTubeAPI('playlistItems', {
             part: 'snippet',
@@ -217,6 +234,7 @@ export const getAbsoluteNewestVideo = async (uploadsPlaylistId: string): Promise
             commentCount: item.statistics.commentCount,
         };
     } catch (error) {
+        console.warn("Could not fetch newest video:", error);
         return null;
     }
 };
@@ -234,10 +252,9 @@ export const getChannelStats = async (channelIdentifier: string): Promise<Channe
         const channel = channelData.items[0];
         const uploadsPlaylistId = channel.contentDetails.relatedPlaylists.uploads;
 
-        const [newest, oldest] = await Promise.all([
-            getAbsoluteNewestVideo(uploadsPlaylistId),
-            getAbsoluteOldestVideo(channel.id, channel.snippet.publishedAt)
-        ]);
+        // Fetch newest and oldest separately and handle failures
+        const newest = await getAbsoluteNewestVideo(uploadsPlaylistId);
+        const oldest = await getAbsoluteOldestVideo(channel.id, channel.snippet.publishedAt);
 
         return {
             id: channel.id,
@@ -299,6 +316,8 @@ export const getChannelStatsBatch = async (channelIds: string[]): Promise<Partia
 }
 
 export const getChannelVideos = async (playlistId: string, maxResults: number, pageToken?: string): Promise<{ videos: VideoStat[], nextPageToken?: string }> => {
+    if (!playlistId || playlistId.trim() === '') return { videos: [] };
+    
     const playlistParams: Record<string, string> = { part: 'snippet', playlistId: playlistId, maxResults: String(maxResults) };
     if (pageToken) playlistParams.pageToken = pageToken;
     try {

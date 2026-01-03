@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -28,7 +27,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
     selectedIds, 
     onChange,
     icon,
-    className = "w-full md:w-56",
+    className = "w-full",
     onCreateClick,
     onManageClick,
     manageCount = 0

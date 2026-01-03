@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { SearchableSelect } from './SearchableSelect';
 import { MultiSelectDropdown, Option as MultiOption } from './MultiSelectDropdown';
@@ -313,7 +312,8 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
                         Add Movie
                     </button>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {/* Updated grid to grid-cols-6 for exactly 6 items per row */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
                      <MultiSelectDropdown 
                         label="Time"
                         options={timeOptions}
