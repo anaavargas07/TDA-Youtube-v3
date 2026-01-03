@@ -1,12 +1,13 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { SearchableSelect } from './SearchableSelect';
 import { MultiSelectDropdown, Option as MultiOption } from './MultiSelectDropdown';
 import { AddMovieModal } from './AddMovieModal';
 import { MovieSummaryCards } from './MovieSummaryCards';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
-import { BulkActionBar } from './BulkActionBar'; // Import BulkActionBar
-import { CircularCheckbox } from './CircularCheckbox'; // Import from new file
-import { SortableHeader } from './SortableHeader'; // Import from new file
+import { BulkActionBar } from './BulkActionBar';
+import { CircularCheckbox } from './CircularCheckbox';
+import { SortableHeader } from './SortableHeader';
 import type { Movie, MovieStatus, ChannelStats, AppSettings } from '../types';
 
 type SortKey = 'name' | 'addedAt' | 'status' | 'note';
@@ -17,11 +18,22 @@ interface MoviesViewProps {
     channels: ChannelStats[];
     onAddMovies: (names: string) => void;
     onUpdateMovie: (id: string, updates: Partial<Movie>) => void;
-    onBulkUpdateMovieStatus: (ids: string[], status: MovieStatus) => void; // Kept for appData interaction
-    onDeleteMovie: (id: string) => void; // Kept for appData interaction
+    onBulkUpdateMovieStatus: (ids: string[], status: MovieStatus) => void;
+    onDeleteMovie: (id: string) => void;
     settings: AppSettings;
-    setMovies: React.Dispatch<React.SetStateAction<Movie[]>>; // Added setter to enable internal movie state manipulation
+    setMovies: React.Dispatch<React.SetStateAction<Movie[]>>;
 }
+
+// Icon Paths Constants for Consistency
+const ICONS = {
+    CALENDAR: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z",
+    TAG: "M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z",
+    CUBE: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4",
+    // New beautiful Layers icon for 2D
+    SQUARE: "M3 10h18M7 15h10m-14-5a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2v-8z",
+    FILM: "M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4",
+    NOTE: "M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+};
 
 export const STATUS_OPTIONS: { id: MovieStatus; label: string; colorClass: string; hex: string }[] = [
     { id: 'Playlist', label: 'Playlist', colorClass: 'text-blue-400 bg-blue-400/10 border-blue-400/20', hex: '#60a5fa' },
@@ -86,7 +98,7 @@ const BulkDropdown: React.FC<{
                 {label}
             </button>
             {isOpen && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-gray-800 border border-gray-700 rounded-xl shadow-xl overflow-hidden animate-slide-up z-50">
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-56 bg-[#1e293b] border-2 border-gray-700 rounded-xl shadow-2xl overflow-hidden animate-slide-up z-50">
                     {children}
                 </div>
             )}
@@ -97,7 +109,7 @@ const BulkDropdown: React.FC<{
 export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddMovies, onUpdateMovie, onBulkUpdateMovieStatus, onDeleteMovie, settings, setMovies }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [selectedIds, setSelectedIds] = useState<string[]>([]); // Movie selection
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection }>({ key: 'addedAt', direction: 'desc' });
     const [visibleColumns, setVisibleColumns] = useState<string[]>(ALL_MOVIE_COLUMNS.map(c => c.id));
     
@@ -129,10 +141,9 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
                 }
             }
         };
-        const handleClickOutside = () => {
-            if (activeBulkMenu) {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (!(e.target as HTMLElement).closest('.relative')) {
                 setActiveBulkMenu(null);
-                setPendingBulkValue(null);
             }
         };
         window.addEventListener('keydown', handleEscape);
@@ -300,7 +311,6 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
                         selectedIds={visibleColumns}
                         onChange={setVisibleColumns}
                         className="w-40 h-full"
-                        icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 4.5v15m6-15v15m-10.875 0h15.75c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H4.125C3.504 4.5 3 5.004 3 5.625v12.75c0 .621.504 1.125 1.125 1.125Z" /></svg>}
                     />
                     <button
                         onClick={() => setIsAddModalOpen(true)}
@@ -312,7 +322,6 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
                         Add Movie
                     </button>
                 </div>
-                {/* Updated grid to grid-cols-6 for exactly 6 items per row */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
                      <MultiSelectDropdown 
                         label="Time"
@@ -320,7 +329,7 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
                         selectedIds={timeFilter}
                         onChange={setTimeFilter}
                         className="w-full h-11"
-                        icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                        icon={<svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={ICONS.CALENDAR} /></svg>}
                     />
                     <MultiSelectDropdown 
                         label="Status"
@@ -328,7 +337,7 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
                         selectedIds={selectedStatuses}
                         onChange={setSelectedStatuses}
                         className="w-full h-11"
-                        icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 00-2-2M9 5a2 2 0 012-2h2a2 2 0 012 2" strokeLinecap="round"/></svg>}
+                        icon={<svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={ICONS.TAG} /></svg>}
                     />
                     <MultiSelectDropdown 
                         label="3D Channels"
@@ -336,7 +345,7 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
                         selectedIds={selected3DIds}
                         onChange={setSelected3DIds}
                         className="w-full h-11"
-                        icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>}
+                        icon={<svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={ICONS.CUBE} /></svg>}
                     />
                     <MultiSelectDropdown 
                         label="2D Channels"
@@ -344,7 +353,7 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
                         selectedIds={selected2DIds}
                         onChange={setSelected2DIds}
                         className="w-full h-11"
-                        icon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>}
+                        icon={<svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={ICONS.SQUARE} /></svg>}
                     />
                 </div>
             </div>
@@ -373,22 +382,22 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
                                     <CircularCheckbox checked={filteredAndSortedMovies.length > 0 && selectedIds.length === filteredAndSortedMovies.length} onChange={handleToggleAll} label="Select all movies" />
                                 </th>
                                 {isVisible('name') && (
-                                    <SortableHeader label="Movie Title" sortKey="name" currentSort={sortConfig} onSort={handleSort} className="w-[250px] min-w-[200px]" icon={<svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4" /></svg>} />
+                                    <SortableHeader label="Movie Title" sortKey="name" currentSort={sortConfig} onSort={handleSort} className="w-[250px] min-w-[200px]" icon={<svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={ICONS.FILM} /></svg>} />
                                 )}
                                 {isVisible('status') && (
-                                    <SortableHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSort} align="center" className="w-[160px] min-w-[160px]" icon={<svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>} />
+                                    <SortableHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSort} align="center" className="w-[160px] min-w-[160px]" icon={<svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={ICONS.TAG} /></svg>} />
                                 )}
                                 {isVisible('addedAt') && (
-                                    <SortableHeader label="Added At" sortKey="addedAt" currentSort={sortConfig} onSort={handleSort} className="w-[120px] min-w-[120px]" icon={<svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>} />
+                                    <SortableHeader label="Added At" sortKey="addedAt" currentSort={sortConfig} onSort={handleSort} className="w-[120px] min-w-[120px]" icon={<svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={ICONS.CALENDAR} /></svg>} />
                                 )}
                                 {isVisible('3d') && (
-                                    <th className="px-4 py-3 text-center text-sm font-medium text-gray-300 w-[180px] min-w-[180px] whitespace-nowrap overflow-hidden"><div className="flex items-center justify-center gap-2 opacity-90 truncate"><svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>3D Chan.</div></th>
+                                    <th className="px-4 py-3 text-center text-sm font-medium text-gray-300 w-[180px] min-w-[180px] whitespace-nowrap overflow-hidden"><div className="flex items-center justify-center gap-2 opacity-90 truncate"><svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={ICONS.CUBE} /></svg>3D Chan.</div></th>
                                 )}
                                 {isVisible('2d') && (
-                                    <th className="px-4 py-3 text-center text-sm font-medium text-gray-300 w-[180px] min-w-[180px] whitespace-nowrap overflow-hidden"><div className="flex items-center justify-center gap-2 opacity-90 truncate"><svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>2D Chan.</div></th>
+                                    <th className="px-4 py-3 text-center text-sm font-medium text-gray-300 w-[180px] min-w-[180px] whitespace-nowrap overflow-hidden"><div className="flex items-center justify-center gap-2 opacity-90 truncate"><svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={ICONS.SQUARE} /></svg>2D Chan.</div></th>
                                 )}
                                 {isVisible('note') && (
-                                    <th className="px-4 py-3 text-center text-sm font-medium text-gray-300 w-auto min-w-[200px] whitespace-nowrap overflow-hidden"><div className="flex items-center justify-center gap-2 opacity-90 truncate"><svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>Note</div></th>
+                                    <th className="px-4 py-3 text-center text-sm font-medium text-gray-300 w-auto min-w-[200px] whitespace-nowrap overflow-hidden"><div className="flex items-center justify-center gap-2 opacity-90 truncate"><svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={ICONS.NOTE} /></svg>Note</div></th>
                                 )}
                             </tr>
                         </thead>
@@ -418,11 +427,67 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
 
             {selectedIds.length > 0 && (
                 <BulkActionBar count={selectedIds.length} onClear={() => setSelectedIds([])} onDelete={() => setIsDeleteModalOpen(true)}>
-                    <BulkDropdown label="Status" icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>} isOpen={activeBulkMenu === 'status'} onToggle={() => { setActiveBulkMenu(activeBulkMenu === 'status' ? null : 'status'); setPendingBulkValue(null); }}>
-                        <div className="max-h-60 overflow-y-auto custom-scrollbar">{STATUS_OPTIONS.map(status => (
-                            <button key={status.id} onClick={(e) => { e.stopPropagation(); setPendingBulkValue(status.id); }} className={`w-full text-left px-4 py-2 text-xs transition-colors flex items-center gap-2 justify-between ${pendingBulkValue === status.id ? 'bg-indigo-900/50 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}><div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: status.hex }}></span>{status.label}</div>{pendingBulkValue === status.id && <span className="text-indigo-400 font-bold">✓</span>}</button>
-                        ))}</div>
-                        <div className="p-2 border-t border-gray-700 bg-gray-900/50"><button onClick={(e) => { e.stopPropagation(); commitBulkStatusChange(); }} disabled={!pendingBulkValue} className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold py-1.5 rounded transition-all">Save</button></div>
+                    <BulkDropdown 
+                        label="Status" 
+                        icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={ICONS.TAG} /></svg>} 
+                        isOpen={activeBulkMenu === 'status'} 
+                        onToggle={() => { setActiveBulkMenu(activeBulkMenu === 'status' ? null : 'status'); setPendingBulkValue(null); }}
+                    >
+                        <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                            {STATUS_OPTIONS.map(status => (
+                                <button key={status.id} onClick={(e) => { e.stopPropagation(); setPendingBulkValue(status.id); }} className={`w-full text-left px-4 py-2 text-xs transition-colors flex items-center gap-2 justify-between ${pendingBulkValue === status.id ? 'bg-indigo-900/50 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}>
+                                    <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: status.hex }}></span>{status.label}</div>
+                                    {pendingBulkValue === status.id && <span className="text-indigo-400 font-bold">✓</span>}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="p-2 border-t border-gray-700 bg-gray-900/50">
+                            <button onClick={(e) => { e.stopPropagation(); commitBulkStatusChange(); }} disabled={!pendingBulkValue} className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold py-1.5 rounded transition-all">Save</button>
+                        </div>
+                    </BulkDropdown>
+
+                    <BulkDropdown 
+                        label="3D" 
+                        icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={ICONS.CUBE} /></svg>} 
+                        isOpen={activeBulkMenu === '3d'} 
+                        onToggle={() => { setActiveBulkMenu(activeBulkMenu === '3d' ? null : '3d'); setBulkSearchTerm(''); setPendingBulkValue(null); }}
+                    >
+                        <div className="p-2 border-b border-gray-700 bg-gray-900/30" onClick={e => e.stopPropagation()}>
+                            <input type="text" autoFocus placeholder="Find channel..." value={bulkSearchTerm} onChange={e => setBulkSearchTerm(e.target.value)} className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-white focus:outline-none" />
+                        </div>
+                        <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                            {filteredBulkChannels.length > 0 ? filteredBulkChannels.map(c => (
+                                <button key={c.id} onClick={(e) => { e.stopPropagation(); setPendingBulkValue(c.id); }} className={`w-full text-left px-4 py-2 text-xs transition-colors flex justify-between items-center ${pendingBulkValue === c.id ? 'bg-indigo-900/50 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}>
+                                    <span className="truncate pr-2">{c.label}</span>
+                                    {pendingBulkValue === c.id && <span className="text-indigo-400 font-bold flex-shrink-0">✓</span>}
+                                </button>
+                            )) : <div className="p-2 text-xs text-gray-500 text-center">No results found</div>}
+                        </div>
+                        <div className="p-2 border-t border-gray-700 bg-gray-900/50">
+                            <button onClick={(e) => { e.stopPropagation(); commitBulkChannelAdd('3D'); }} disabled={!pendingBulkValue} className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold py-1.5 rounded transition-all">Save</button>
+                        </div>
+                    </BulkDropdown>
+
+                    <BulkDropdown 
+                        label="2D" 
+                        icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={ICONS.SQUARE} /></svg>} 
+                        isOpen={activeBulkMenu === '2d'} 
+                        onToggle={() => { setActiveBulkMenu(activeBulkMenu === '2d' ? null : '2d'); setBulkSearchTerm(''); setPendingBulkValue(null); }}
+                    >
+                        <div className="p-2 border-b border-gray-700 bg-gray-900/30" onClick={e => e.stopPropagation()}>
+                            <input type="text" autoFocus placeholder="Find channel..." value={bulkSearchTerm} onChange={e => setBulkSearchTerm(e.target.value)} className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-white focus:outline-none" />
+                        </div>
+                        <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                            {filteredBulkChannels.length > 0 ? filteredBulkChannels.map(c => (
+                                <button key={c.id} onClick={(e) => { e.stopPropagation(); setPendingBulkValue(c.id); }} className={`w-full text-left px-4 py-2 text-xs transition-colors flex justify-between items-center ${pendingBulkValue === c.id ? 'bg-indigo-900/50 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}>
+                                    <span className="truncate pr-2">{c.label}</span>
+                                    {pendingBulkValue === c.id && <span className="text-indigo-400 font-bold flex-shrink-0">✓</span>}
+                                </button>
+                            )) : <div className="p-2 text-xs text-gray-500 text-center">No results found</div>}
+                        </div>
+                        <div className="p-2 border-t border-gray-700 bg-gray-900/50">
+                            <button onClick={(e) => { e.stopPropagation(); commitBulkChannelAdd('2D'); }} disabled={!pendingBulkValue} className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold py-1.5 rounded transition-all">Save</button>
+                        </div>
                     </BulkDropdown>
                 </BulkActionBar>
             )}
