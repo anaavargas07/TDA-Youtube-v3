@@ -44,6 +44,31 @@ const ALL_CHANNEL_COLUMNS: Option[] = [
     { id: 'newestVideo', label: 'Newest Video' },
 ];
 
+const BulkDropdown: React.FC<{
+    label: string;
+    icon: React.ReactNode;
+    isOpen: boolean;
+    onToggle: () => void;
+    children: React.ReactNode;
+}> = ({ label, icon, isOpen, onToggle, children }) => {
+    return (
+        <div className="relative">
+            <button
+                onClick={(e) => { e.stopPropagation(); onToggle(); }}
+                className={`text-gray-300 hover:text-white flex items-center gap-2 text-sm font-bold transition-colors px-3 py-1.5 rounded-lg ${isOpen ? 'bg-gray-700 text-white' : ''}`}
+            >
+                {icon}
+                {label}
+            </button>
+            {isOpen && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-56 bg-[#1e293b] border-2 border-gray-700 rounded-xl shadow-2xl overflow-hidden animate-slide-up z-50">
+                    {children}
+                </div>
+            )}
+        </div>
+    )
+}
+
 export const ChannelsView: React.FC<ChannelsViewProps> = ({
     trackedChannels, channelGroups, onAddChannel, onSelectChannel, onRemoveChannel, onUpdateChannel,
     onSaveGroup, handleBulkUpdateChannels, isAdding, apiKeySet, settings, setChannelGroups,
@@ -65,6 +90,7 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [activeBulkMenu, setActiveBulkMenu] = useState<'group' | 'monetized' | 'engagement' | null>(null);
     const [pendingBulkValues, setPendingBulkValues] = useState<string[]>([]);
+    const [pendingBulkValue, setPendingBulkValue] = useState<string | null>(null);
 
     const [isMonetizationOverviewOpen, setIsMonetizationOverviewOpen] = useState(false);
     const [isEngagementOverviewOpen, setIsEngagementOverviewOpen] = useState(false);
@@ -133,35 +159,58 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
     };
 
     const commitBulkAction = async () => {
-        if (pendingBulkValues.length === 0) return;
-        
         if (activeBulkMenu === 'group') {
-            pendingBulkValues.forEach(groupId => {
-                const targetGroup = channelGroups.find(g => g.id === groupId);
-                if (targetGroup) {
-                    const combinedChannelIds = Array.from(new Set([...targetGroup.channelIds, ...selectedChannelIds]));
-                    onSaveGroup({ ...targetGroup, channelIds: combinedChannelIds });
+            // Duyệt qua tất cả các group hiện có
+            channelGroups.forEach(group => {
+                const isGroupInPendingList = pendingBulkValues.includes(group.id);
+                let updatedChannelIds = [...group.channelIds];
+
+                if (isGroupInPendingList) {
+                    // Nếu group này được chọn: Thêm tất cả selectedChannelIds vào group (nếu chưa có)
+                    updatedChannelIds = Array.from(new Set([...updatedChannelIds, ...selectedChannelIds]));
+                } else {
+                    // Nếu group này không được chọn: Loại bỏ tất cả selectedChannelIds ra khỏi group này (unadd)
+                    updatedChannelIds = updatedChannelIds.filter(id => !selectedChannelIds.includes(id));
+                }
+
+                // Chỉ gọi API nếu mảng ID thực sự có thay đổi
+                if (JSON.stringify(updatedChannelIds) !== JSON.stringify(group.channelIds)) {
+                    onSaveGroup({ ...group, channelIds: updatedChannelIds });
                 }
             });
         } else if (activeBulkMenu === 'monetized') {
-            const status = pendingBulkValues[0] as MonetizationStatus;
+            if (!pendingBulkValue) return;
+            const status = pendingBulkValue as MonetizationStatus;
             await handleBulkUpdateChannels(selectedChannelIds, { monetizationStatus: status });
         } else if (activeBulkMenu === 'engagement') {
-            const status = pendingBulkValues[0] as EngagementStatus;
+            if (!pendingBulkValue) return;
+            const status = pendingBulkValue as EngagementStatus;
             await handleBulkUpdateChannels(selectedChannelIds, { engagementStatus: status });
         }
         
         setSelectedChannelIds([]);
         setActiveBulkMenu(null);
         setPendingBulkValues([]);
+        setPendingBulkValue(null);
     };
 
     const togglePendingValue = (val: string) => {
         if (activeBulkMenu === 'group') {
             setPendingBulkValues(prev => prev.includes(val) ? prev.filter(v => v !== val) : [...prev, val]);
         } else {
-            setPendingBulkValues([val]);
+            setPendingBulkValue(val);
         }
+    };
+
+    // Hàm tiện ích để khởi tạo danh sách group đang được add cho các channel đang chọn
+    const openBulkGroupMenu = () => {
+        // Tìm các group có chứa ít nhất 1 channel trong số các channel đang chọn
+        const initiallySelectedGroups = channelGroups
+            .filter(g => g.channelIds.some(cid => selectedChannelIds.includes(cid)))
+            .map(g => g.id);
+            
+        setPendingBulkValues(initiallySelectedGroups);
+        setActiveBulkMenu('group');
     };
 
     return (
@@ -194,7 +243,6 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
                         Add Channel
                     </button>
                 </div>
-                {/* Updated grid to grid-cols-6 for exactly 6 items per row */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
                     <MultiSelectDropdown 
                         label="Groups" 
@@ -254,56 +302,61 @@ export const ChannelsView: React.FC<ChannelsViewProps> = ({
 
             {selectedChannelIds.length > 0 && (
                 <BulkActionBar count={selectedChannelIds.length} onClear={() => setSelectedChannelIds([])} onDelete={() => setIsDeleteModalOpen(true)}>
-                    <div className="relative">
-                        <button onClick={(e) => { e.stopPropagation(); setActiveBulkMenu(activeBulkMenu === 'group' ? null : 'group'); setPendingBulkValues([]); }} className={`flex items-center gap-2 text-sm font-bold ${activeBulkMenu === 'group' ? 'text-indigo-400' : 'text-gray-300'}`}>
-                            <span>📂 Add Group</span>
-                        </button>
-                        {activeBulkMenu === 'group' && (
-                            <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 w-64 bg-[#1e293b] border-2 border-gray-700 rounded-xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-                                <div className="max-h-48 overflow-y-auto py-1">
-                                    {channelGroups.map(g => (
-                                        <button key={g.id} onClick={() => togglePendingValue(g.id)} className={`w-full text-left px-4 py-2 text-xs transition-colors flex justify-between items-center ${pendingBulkValues.includes(g.id) ? 'bg-indigo-600/30 text-white' : 'text-gray-400 hover:bg-white/5'}`}>
-                                            <span className="truncate">{g.name}</span>
-                                            {pendingBulkValues.includes(g.id) && <span className="text-indigo-400 font-bold ml-2">✓</span>}
-                                        </button>
-                                    ))}
-                                </div>
-                                <button onClick={commitBulkAction} disabled={pendingBulkValues.length === 0} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 transition-all">Apply Group</button>
-                            </div>
-                        )}
-                    </div>
+                    <BulkDropdown 
+                        label="Add Group" 
+                        icon={<span className="text-xs">📂</span>} 
+                        isOpen={activeBulkMenu === 'group'} 
+                        onToggle={() => activeBulkMenu === 'group' ? setActiveBulkMenu(null) : openBulkGroupMenu()}
+                    >
+                        <div className="max-h-48 overflow-y-auto py-1 custom-scrollbar">
+                            {channelGroups.map(g => (
+                                <button key={g.id} onClick={(e) => { e.stopPropagation(); togglePendingValue(g.id); }} className={`w-full text-left px-4 py-2 text-xs transition-colors flex justify-between items-center ${pendingBulkValues.includes(g.id) ? 'bg-indigo-600/30 text-white' : 'text-gray-400 hover:bg-white/5'}`}>
+                                    <div className="flex items-center gap-2 truncate">
+                                        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: g.color || '#4f46e5' }}></div>
+                                        <span className="truncate">{g.name}</span>
+                                    </div>
+                                    {pendingBulkValues.includes(g.id) && <span className="text-indigo-400 font-bold ml-2">✓</span>}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="p-2 border-t border-gray-700 bg-gray-900/50">
+                            <button onClick={(e) => { e.stopPropagation(); commitBulkAction(); }} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-1.5 rounded transition-all">Save</button>
+                        </div>
+                    </BulkDropdown>
 
-                    <div className="relative">
-                        <button onClick={(e) => { e.stopPropagation(); setActiveBulkMenu(activeBulkMenu === 'monetized' ? null : 'monetized'); setPendingBulkValues([]); }} className={`flex items-center gap-2 text-sm font-bold ${activeBulkMenu === 'monetized' ? 'text-indigo-400' : 'text-gray-300'}`}>
-                            <span>💸 Monetized</span>
-                        </button>
-                        {activeBulkMenu === 'monetized' && (
-                            <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 w-48 bg-[#1e293b] border-2 border-gray-700 rounded-xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-                                {MONETIZATION_OPTIONS.map(opt => (
-                                    <button key={opt.id} onClick={() => { togglePendingValue(opt.id); }} className={`w-full text-left px-4 py-2 text-xs transition-colors ${pendingBulkValues.includes(opt.id) ? 'bg-indigo-600/30 text-white' : 'text-gray-400 hover:bg-white/5'}`}>
+                    <BulkDropdown label="Monetized" icon={<span className="text-xs">💸</span>} isOpen={activeBulkMenu === 'monetized'} onToggle={() => { setActiveBulkMenu(activeBulkMenu === 'monetized' ? null : 'monetized'); setPendingBulkValue(null); }}>
+                        <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                            {MONETIZATION_OPTIONS.map(opt => (
+                                <button key={opt.id} onClick={(e) => { e.stopPropagation(); setPendingBulkValue(opt.id); }} className={`w-full text-left px-4 py-2 text-xs transition-colors flex items-center gap-2 justify-between ${pendingBulkValue === opt.id ? 'bg-indigo-900/50 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`w-2 h-2 rounded-full ${opt.colorClass.split(' ').find(c => c.startsWith('text-'))?.replace('text-', 'bg-') || 'bg-gray-400'}`}></span>
                                         {opt.label}
-                                    </button>
-                                ))}
-                                <button onClick={commitBulkAction} disabled={pendingBulkValues.length === 0} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2">Apply</button>
-                            </div>
-                        )}
-                    </div>
+                                    </div>
+                                    {pendingBulkValue === opt.id && <span className="text-indigo-400 font-bold">✓</span>}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="p-2 border-t border-gray-700 bg-gray-900/50">
+                            <button onClick={(e) => { e.stopPropagation(); commitBulkAction(); }} disabled={!pendingBulkValue} className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold py-1.5 rounded transition-all">Save</button>
+                        </div>
+                    </BulkDropdown>
 
-                    <div className="relative">
-                        <button onClick={(e) => { e.stopPropagation(); setActiveBulkMenu(activeBulkMenu === 'engagement' ? null : 'engagement'); setPendingBulkValues([]); }} className={`flex items-center gap-2 text-sm font-bold ${activeBulkMenu === 'engagement' ? 'text-indigo-400' : 'text-gray-300'}`}>
-                            <span>👍 Engagement</span>
-                        </button>
-                        {activeBulkMenu === 'engagement' && (
-                            <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 w-48 bg-[#1e293b] border-2 border-gray-700 rounded-xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-                                {ENGAGEMENT_OPTIONS.map(opt => (
-                                    <button key={opt.id} onClick={() => { togglePendingValue(opt.id); }} className={`w-full text-left px-4 py-2 text-xs transition-colors ${pendingBulkValues.includes(opt.id) ? 'bg-indigo-600/30 text-white' : 'text-gray-400 hover:bg-white/5'}`}>
+                    <BulkDropdown label="Engagement" icon={<span className="text-xs">👍</span>} isOpen={activeBulkMenu === 'engagement'} onToggle={() => { setActiveBulkMenu(activeBulkMenu === 'engagement' ? null : 'engagement'); setPendingBulkValue(null); }}>
+                        <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                            {ENGAGEMENT_OPTIONS.map(opt => (
+                                <button key={opt.id} onClick={(e) => { e.stopPropagation(); setPendingBulkValue(opt.id); }} className={`w-full text-left px-4 py-2 text-xs transition-colors flex items-center gap-2 justify-between ${pendingBulkValue === opt.id ? 'bg-indigo-900/50 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`w-2 h-2 rounded-full ${opt.colorClass.split(' ').find(c => c.startsWith('text-'))?.replace('text-', 'bg-') || 'bg-gray-400'}`}></span>
                                         {opt.label}
-                                    </button>
-                                ))}
-                                <button onClick={commitBulkAction} disabled={pendingBulkValues.length === 0} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2">Apply</button>
-                            </div>
-                        )}
-                    </div>
+                                    </div>
+                                    {pendingBulkValue === opt.id && <span className="text-indigo-400 font-bold">✓</span>}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="p-2 border-t border-gray-700 bg-gray-900/50">
+                            <button onClick={(e) => { e.stopPropagation(); commitBulkAction(); }} disabled={!pendingBulkValue} className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold py-1.5 rounded transition-all">Save</button>
+                        </div>
+                    </BulkDropdown>
                 </BulkActionBar>
             )}
 
