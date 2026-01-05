@@ -45,7 +45,6 @@ const NoteInput: React.FC<{ initialValue: string, onSave: (val: string) => void 
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') {
-            // FIX: Cast currentTarget to HTMLElement to access the 'blur' method.
             (e.currentTarget as HTMLElement).blur();
         }
     };
@@ -367,7 +366,6 @@ export const UnextView: React.FC<UnextViewProps> = ({ movies, channels, onAddMov
 
     return (
         <div className="space-y-6 animate-fade-in w-full pb-20">
-            {/* Header & Controls */}
             <div className="bg-gray-800/20 p-4 rounded-xl border border-gray-700/50 space-y-4 shadow-xl">
                 <div className="flex flex-row gap-4 items-center h-12">
                     <div className="relative flex-grow h-full">
@@ -391,7 +389,6 @@ export const UnextView: React.FC<UnextViewProps> = ({ movies, channels, onAddMov
                         selectedIds={visibleColumns}
                         onChange={setVisibleColumns}
                         className="w-40 h-full"
-                        icon={<svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 00-2 2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 00-2 2" /></svg>}
                     />
 
                     <div className="flex items-center gap-2 h-full">
@@ -414,7 +411,6 @@ export const UnextView: React.FC<UnextViewProps> = ({ movies, channels, onAddMov
                         selectedIds={timeFilter}
                         onChange={setTimeFilter}
                         className="w-full"
-                        icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                     />
                     <MultiSelectDropdown 
                         label="Status"
@@ -422,14 +418,12 @@ export const UnextView: React.FC<UnextViewProps> = ({ movies, channels, onAddMov
                         selectedIds={selectedStatuses}
                         onChange={setSelectedStatuses}
                         className="w-full"
-                        icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" strokeWidth="2" strokeLinecap="round"/></svg>}
                     />
                 </div>
             </div>
 
             <MovieSummaryCards movies={movies} />
 
-            {/* Pagination Top Bar */}
             {totalItems > itemsPerPage && (
                 <div className="flex justify-between items-center bg-gray-800/40 p-3 rounded-lg border border-gray-700/50">
                     <div className="text-sm text-gray-400">
@@ -457,7 +451,6 @@ export const UnextView: React.FC<UnextViewProps> = ({ movies, channels, onAddMov
                 </div>
             )}
 
-            {/* Main Table */}
             <div className="overflow-x-auto bg-gray-800/40 rounded-lg shadow-xl border border-gray-700/50">
                 <table className="min-w-full divide-y divide-gray-700/50 table-fixed">
                     <thead className="bg-gray-900/50">
@@ -477,7 +470,6 @@ export const UnextView: React.FC<UnextViewProps> = ({ movies, channels, onAddMov
                                     currentSort={sortConfig} 
                                     onSort={handleSort} 
                                     className="w-[250px] min-w-[200px]"
-                                    icon={<svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4" /></svg>}
                                 />
                             )}
                             {isVisible('status') && (
@@ -488,7 +480,6 @@ export const UnextView: React.FC<UnextViewProps> = ({ movies, channels, onAddMov
                                     onSort={handleSort} 
                                     align="center" 
                                     className="w-[160px] min-w-[160px]"
-                                    icon={<svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>}
                                 />
                             )}
                             {isVisible('addedAt') && (
@@ -498,31 +489,21 @@ export const UnextView: React.FC<UnextViewProps> = ({ movies, channels, onAddMov
                                     currentSort={sortConfig} 
                                     onSort={handleSort} 
                                     className="w-[120px] min-w-[120px]"
-                                    icon={<svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
                                 />
                             )}
                             {isVisible('3d') && (
                                 <th className="px-2 py-2 text-center text-sm font-medium text-gray-300 w-[180px] min-w-[180px]">
-                                    <div className="flex items-center justify-center gap-2">
-                                        <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-                                        3D Channel
-                                    </div>
+                                    3D Channel
                                 </th>
                             )}
                             {isVisible('2d') && (
                                 <th className="px-2 py-2 text-center text-sm font-medium text-gray-300 w-[180px] min-w-[180px]">
-                                    <div className="flex items-center justify-center gap-2">
-                                        <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
-                                        2D Channel
-                                    </div>
+                                    2D Channel
                                 </th>
                             )}
                             {isVisible('note') && (
                                 <th className="px-2 py-2 text-left text-sm font-medium text-gray-300 w-auto min-w-[200px]">
-                                    <div className="flex items-center gap-2">
-                                        <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                                        Note
-                                    </div>
+                                    Note
                                 </th>
                             )}
                         </tr>
@@ -537,19 +518,13 @@ export const UnextView: React.FC<UnextViewProps> = ({ movies, channels, onAddMov
                                 <tr 
                                     key={movie.id} 
                                     className={`hover:bg-gray-700/30 transition-colors group ${isSelected ? 'bg-indigo-900/20 hover:bg-indigo-900/30' : ''}`}
-                                    onClick={(e) => {
-                                        if (!(e.target as HTMLElement).closest('button, input, .no-row-click')) {
-                                            handleToggleRow(movie.id);
-                                        }
-                                    }}
                                 >
                                     <td className="px-2 py-1.5 align-middle sticky left-0 z-10 bg-inherit">
                                         <div className="absolute inset-0 bg-gray-900/50 -z-10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                                         <div className="flex items-center justify-center">
                                             <CircularCheckbox 
-                                                checked={isSelected}
+                                                checked={isSelected} 
                                                 onChange={() => handleToggleRow(movie.id)}
-                                                onClick={(e) => e.stopPropagation()}
                                             />
                                         </div>
                                     </td>
@@ -576,8 +551,8 @@ export const UnextView: React.FC<UnextViewProps> = ({ movies, channels, onAddMov
                                     {isVisible('addedAt') && (
                                         <td className="px-2 py-1.5 align-middle">
                                             <div className="flex flex-col">
-                                                <span className="text-xs text-gray-300">{new Date(movie.addedAt).toLocaleDateString()}</span>
-                                                <span className="text-[10px] text-gray-500 font-mono">{new Date(movie.addedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                <span className="text-xs text-gray-300 font-bold">{new Date(movie.addedAt).toLocaleDateString()}</span>
+                                                <span className="text-[10px] text-gray-400 font-semibold mt-0.5">{new Date(movie.addedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                             </div>
                                         </td>
                                     )}
@@ -622,13 +597,7 @@ export const UnextView: React.FC<UnextViewProps> = ({ movies, channels, onAddMov
                         }) : (
                             <tr>
                                 <td colSpan={visibleColumns.length + 1} className="px-6 py-20 text-center">
-                                    <div className="flex flex-col items-center justify-center text-gray-500">
-                                        <svg className="w-12 h-12 mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4" />
-                                        </svg>
-                                        <p className="text-lg font-medium">No movies found</p>
-                                        <p className="text-sm opacity-60">Try adjusting filters or add a new movie.</p>
-                                    </div>
+                                    <p className="text-gray-500 italic">No movies found</p>
                                 </td>
                             </tr>
                         )}
@@ -636,35 +605,6 @@ export const UnextView: React.FC<UnextViewProps> = ({ movies, channels, onAddMov
                 </table>
             </div>
 
-            {/* Pagination Bottom Bar */}
-            {totalItems > itemsPerPage && (
-                <div className="flex justify-between items-center bg-gray-800/40 p-3 rounded-lg border border-gray-700/50">
-                    <div className="text-sm text-gray-400">
-                        Showing <span className="font-medium text-white">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium text-white">{Math.min(currentPage * itemsPerPage, totalItems)}</span> of <span className="font-medium text-white">{totalItems}</span> results
-                    </div>
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                            disabled={currentPage === 1}
-                            className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                            Previous
-                        </button>
-                        <span className="px-3 py-1 bg-gray-900 rounded text-sm text-gray-300 border border-gray-700">
-                            Page {currentPage} of {totalPages}
-                        </span>
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                            disabled={currentPage === totalPages}
-                            className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                            Next
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* Bulk Action Bar */}
             {selectedIds.length > 0 && (
                 <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 animate-slide-up">
                     <div className="bg-gray-800/95 backdrop-blur-md border border-gray-600 rounded-full shadow-2xl px-6 py-3 flex items-center gap-6">
@@ -687,10 +627,7 @@ export const UnextView: React.FC<UnextViewProps> = ({ movies, channels, onAddMov
                                             onClick={(e) => { e.stopPropagation(); setPendingBulkValue(status.id); }}
                                             className={`w-full text-left px-4 py-2 text-xs transition-colors flex items-center gap-2 justify-between ${pendingBulkValue === status.id ? 'bg-indigo-900/50 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}
                                         >
-                                            <div className="flex items-center gap-2">
-                                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: status.hex }}></span>
-                                                {status.label}
-                                            </div>
+                                            {status.label}
                                             {pendingBulkValue === status.id && <span className="text-indigo-400 font-bold">✓</span>}
                                         </button>
                                     ))}
@@ -700,88 +637,16 @@ export const UnextView: React.FC<UnextViewProps> = ({ movies, channels, onAddMov
                                 </div>
                             </BulkDropdown>
 
-                             <BulkDropdown 
-                                label="3D"
-                                icon={<span className="text-[10px] font-bold border border-current px-0.5 rounded">3D</span>}
-                                isOpen={activeBulkMenu === '3d'}
-                                onToggle={() => { setActiveBulkMenu(activeBulkMenu === '3d' ? null : '3d'); setBulkSearchTerm(''); setPendingBulkValue(null); }}
-                            >
-                                <div className="p-2 border-b border-gray-700" onClick={e => e.stopPropagation()}>
-                                    <input type="text" autoFocus placeholder="Find channel..." value={bulkSearchTerm} onChange={e => setBulkSearchTerm(e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1 text-xs text-white focus:outline-none" />
-                                </div>
-                                <div className="max-h-40 overflow-y-auto custom-scrollbar">
-                                    {filteredBulkChannels.length > 0 ? filteredBulkChannels.map(c => (
-                                        <button key={c.id} onClick={(e) => { e.stopPropagation(); setPendingBulkValue(c.id); }} className={`w-full text-left px-4 py-2 text-xs transition-colors flex justify-between items-center ${pendingBulkValue === c.id ? 'bg-indigo-900/50 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}>
-                                            <span className="truncate pr-2">{c.label}</span>
-                                            {pendingBulkValue === c.id && <span className="text-indigo-400 font-bold flex-shrink-0">✓</span>}
-                                        </button>
-                                    )) : <div className="p-2 text-xs text-gray-500 text-center">No channel found</div>}
-                                </div>
-                                <div className="p-2 border-t border-gray-700 bg-gray-900/50">
-                                    <button onClick={(e) => { e.stopPropagation(); commitBulkChannelAdd('3D'); }} disabled={!pendingBulkValue} className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold py-1.5 rounded transition-all">Save</button>
-                                </div>
-                            </BulkDropdown>
-
-                            <BulkDropdown 
-                                label="2D"
-                                icon={<span className="text-[10px] font-bold border border-current px-0.5 rounded">2D</span>}
-                                isOpen={activeBulkMenu === '2d'}
-                                onToggle={() => { setActiveBulkMenu(activeBulkMenu === '2d' ? null : '2d'); setBulkSearchTerm(''); setPendingBulkValue(null); }}
-                            >
-                                <div className="p-2 border-b border-gray-700" onClick={e => e.stopPropagation()}>
-                                    <input type="text" autoFocus placeholder="Find channel..." value={bulkSearchTerm} onChange={e => setBulkSearchTerm(e.target.value)} className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1 text-xs text-white focus:outline-none" />
-                                </div>
-                                <div className="max-h-40 overflow-y-auto custom-scrollbar">
-                                    {filteredBulkChannels.length > 0 ? filteredBulkChannels.map(c => (
-                                        <button key={c.id} onClick={(e) => { e.stopPropagation(); setPendingBulkValue(c.id); }} className={`w-full text-left px-4 py-2 text-xs transition-colors flex justify-between items-center ${pendingBulkValue === c.id ? 'bg-indigo-900/50 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}>
-                                            <span className="truncate pr-2">{c.label}</span>
-                                            {pendingBulkValue === c.id && <span className="text-indigo-400 font-bold flex-shrink-0">✓</span>}
-                                        </button>
-                                    )) : <div className="p-2 text-xs text-gray-500 text-center">No channel found</div>}
-                                </div>
-                                <div className="p-2 border-t border-gray-700 bg-gray-900/50">
-                                    <button onClick={(e) => { e.stopPropagation(); commitBulkChannelAdd('2D'); }} disabled={!pendingBulkValue} className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold py-1.5 rounded transition-all">Save</button>
-                                </div>
-                            </BulkDropdown>
-
                             <button 
                                 onClick={() => setIsDeleteModalOpen(true)}
-                                className="text-red-400 hover:text-red-300 flex items-center gap-2 text-sm font-medium transition-colors pl-4 border-l border-gray-600 ml-2"
+                                className="text-red-400 hover:text-red-300 flex items-center gap-2 text-sm font-medium transition-colors"
                             >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
                                 Delete
-                            </button>
-
-                            <button 
-                                onClick={() => setSelectedIds([])}
-                                className="text-gray-400 hover:text-gray-200 flex items-center gap-2 text-sm font-medium transition-colors"
-                                title="Cancel Selection"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                                </svg>
-                                Cancel
                             </button>
                         </div>
                     </div>
                 </div>
             )}
-
-            <AddMovieModal 
-                isOpen={isAddModalOpen}
-                onClose={() => setIsAddModalOpen(false)}
-                onAddMovies={onAddMovies}
-            />
-
-            <DeleteConfirmModal 
-                isOpen={isDeleteModalOpen}
-                onClose={() => setIsDeleteModalOpen(false)}
-                onConfirm={confirmDelete}
-                count={selectedIds.length}
-                itemName="movie"
-            />
         </div>
     );
 };

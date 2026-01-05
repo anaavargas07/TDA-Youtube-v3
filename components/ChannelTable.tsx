@@ -125,7 +125,7 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
             <table className="min-w-full border-separate border-spacing-0 table-fixed border-collapse">
                 <thead className="bg-gray-900/50">
                     <tr>
-                        <th className="px-4 py-3 w-12 text-center sticky left-0 z-10 bg-inherit border-b border-gray-700/50">
+                        <th className="px-4 py-3 w-16 text-center sticky left-0 z-10 bg-inherit border-b border-gray-700/50">
                             <CircularCheckbox checked={isAllSelected} onChange={onToggleAll} label="Select all channels" />
                         </th>
                         {isVisible('title') && (
@@ -225,28 +225,32 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                         return (
                             <tr 
                                 key={channel.id} 
-                                className={`hover:bg-white/[0.03] transition-all duration-200 group ${isTerminated ? 'opacity-60 bg-red-900/10' : ''} ${isSelected ? 'bg-indigo-900/20' : ''}`}
-                                onClick={(e) => {
-                                    if (!(e.target as HTMLElement).closest('.no-row-click')) {
-                                        onToggleRow(channel.id);
+                                className={`hover:bg-white/[0.03] transition-all duration-200 group cursor-pointer ${isTerminated ? 'opacity-60 bg-red-900/10' : ''} ${isSelected ? 'bg-indigo-900/20' : ''}`}
+                                onClick={() => {
+                                    if (!isTerminated) {
+                                        onSelect(channel.id);
                                     }
                                 }}
                             >
-                                <td className="px-4 py-2.5 whitespace-nowrap sticky left-0 z-10 bg-inherit border-b border-gray-700/50">
-                                    <CircularCheckbox 
-                                        checked={isSelected} 
-                                        onChange={() => onToggleRow(channel.id)} 
-                                        onClick={(e) => e.stopPropagation()} 
-                                        label={`Select ${channel.title}`}
-                                    />
+                                <td 
+                                    className="px-4 py-2.5 whitespace-nowrap sticky left-0 z-10 bg-inherit border-b border-gray-700/50"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onToggleRow(channel.id);
+                                    }}
+                                >
+                                    <div className="flex justify-center items-center h-full">
+                                        <CircularCheckbox 
+                                            checked={isSelected} 
+                                            onChange={() => {}} // Controlled by cell click
+                                            label={`Select ${channel.title}`}
+                                        />
+                                    </div>
                                 </td>
                                 {isVisible('title') && (
                                     <td className="px-4 py-2.5 whitespace-nowrap border-b border-gray-700/50">
                                         <div className="flex items-center">
-                                            <div 
-                                                className="flex-shrink-0 h-10 w-10 relative cursor-pointer group/avatar no-row-click click-navigate"
-                                                onClick={(e) => { e.stopPropagation(); !isTerminated && onSelect(channel.id); }}
-                                            >
+                                            <div className="flex-shrink-0 h-10 w-10 relative group/avatar">
                                                 <img className={`h-10 w-10 rounded-full border transition-all duration-300 ${isTerminated ? 'border-red-500 grayscale' : 'border-gray-600 group-hover/avatar:border-indigo-500 group-hover/avatar:scale-105'} ${isRecentlyActive ? 'active-pulse ring-2 ring-green-500/50' : ''}`} src={channel.thumbnailUrl} alt="" />
                                                 {isRecentlyActive && (
                                                     <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-gray-900 shadow-sm z-10"></span>
@@ -256,8 +260,7 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                             <div className="ml-4 overflow-hidden">
                                                 <div className="flex items-center gap-2">
                                                     <div 
-                                                        className={`text-[13px] font-bold truncate max-w-[150px] transition-colors click-navigate leading-snug ${isTerminated ? 'text-red-400 cursor-not-allowed' : 'text-gray-200 group-hover:text-indigo-400 cursor-pointer'}`} 
-                                                        onClick={() => !isTerminated && onSelect(channel.id)} 
+                                                        className={`text-[13px] font-bold truncate max-w-[150px] transition-colors leading-snug ${isTerminated ? 'text-red-400 cursor-not-allowed' : 'text-gray-200 group-hover:text-indigo-400'}`} 
                                                         title={isTerminated ? "Channel Terminated/Not Found" : channel.title}
                                                     >
                                                         {channel.title}
@@ -269,7 +272,7 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                     </td>
                                 )}
                                 {isVisible('isMonetized') && (
-                                    <td className="px-4 py-2.5 text-center border-b border-gray-700/50 no-row-click">
+                                    <td className="px-4 py-2.5 text-center border-b border-gray-700/50" onClick={(e) => e.stopPropagation()}>
                                         <div className="flex justify-center w-full">
                                             <SearchableSelect 
                                                 value={channel.monetizationStatus || 'undecided'}
@@ -281,7 +284,7 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                     </td>
                                 )}
                                 {isVisible('engagementRate') && (
-                                    <td className="px-4 py-2.5 text-center border-b border-gray-700/50 no-row-click">
+                                    <td className="px-4 py-2.5 text-center border-b border-gray-700/50" onClick={(e) => e.stopPropagation()}>
                                         <div className="flex justify-center w-full">
                                             <SearchableSelect 
                                                 value={channel.engagementStatus || 'undecided'}
@@ -296,7 +299,7 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                     <td className="px-4 py-2.5 border-b border-gray-700/50">
                                         <div className="flex flex-col text-center">
                                             <span className="text-[11px] font-bold text-gray-200">{new Date(channel.publishedAt).toLocaleDateString()}</span>
-                                            <span className="text-[9px] text-gray-500 font-medium">{formatRelativeTime(channel.publishedAt)}</span>
+                                            <span className="text-[10px] text-gray-400 font-semibold mt-0.5">{formatRelativeTime(channel.publishedAt)}</span>
                                         </div>
                                     </td>
                                 )}
@@ -334,7 +337,7 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                     </td>
                                 )}
                                 {isVisible('newestVideo') && (
-                                    <td className="px-4 py-2.5 align-middle border-b border-gray-700/50">
+                                    <td className="px-4 py-2.5 align-middle border-b border-gray-700/50" onClick={(e) => e.stopPropagation()}>
                                         {isTerminated ? <span className="text-xs text-red-500 italic">Unavailable</span> : <MiniVideoDisplay video={channel.newestVideo} type="Newest" />}
                                     </td>
                                 )}

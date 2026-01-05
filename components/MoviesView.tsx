@@ -29,10 +29,43 @@ const ICONS = {
     CALENDAR: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z",
     TAG: "M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z",
     CUBE: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4",
-    // New beautiful Layers icon for 2D
     SQUARE: "M3 10h18M7 15h10m-14-5a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2v-8z",
-    FILM: "M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4",
+    FILM: "M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z",
     NOTE: "M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+};
+
+const IdPill: React.FC<{ id: string, fullId: string }> = ({ id, fullId }) => {
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        navigator.clipboard.writeText(fullId);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    return (
+        <button 
+            onClick={handleCopy}
+            className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full transition-all hover:bg-emerald-500/20 active:scale-95 group/pill shrink-0"
+            title={`Click to copy: ${fullId}`}
+        >
+            <span className="text-[10px] font-black text-emerald-400 font-mono tracking-wider uppercase">
+                {id}
+            </span>
+            <div className={`flex items-center justify-center w-3 h-3 rounded-full border border-emerald-500/30 transition-colors ${copied ? 'bg-emerald-500 border-emerald-500' : 'bg-transparent'}`}>
+                {copied ? (
+                    <svg className="w-2 h-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                ) : (
+                    <svg className="w-2 h-2 text-emerald-500 group-hover/pill:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+                    </svg>
+                )}
+            </div>
+        </button>
+    );
 };
 
 export const STATUS_OPTIONS: { id: MovieStatus; label: string; colorClass: string; hex: string }[] = [
@@ -154,13 +187,30 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
         };
     }, [activeBulkMenu, selectedIds.length]);
 
-    const singleSelectChannelOptions = useMemo(() => channels.map(c => ({ id: c.id, label: c.title, colorClass: getChannelColorClass(c.id) })), [channels]);
-    const statusDropdownOptions: MultiOption[] = useMemo(() => STATUS_OPTIONS.map(s => ({ id: s.id, label: s.label, color: s.hex })), []);
+    const singleSelectChannelOptions = useMemo(() => channels.map(c => ({ 
+        id: c.id, 
+        label: c.title, 
+        colorClass: getChannelColorClass(c.id),
+        icon: (
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d={ICONS.CUBE} />
+            </svg>
+        )
+    })), [channels]);
+
+    const statusDropdownOptions: MultiOption[] = useMemo(() => STATUS_OPTIONS.map(s => ({ 
+        id: s.id, 
+        label: s.label, 
+        color: s.hex,
+        icon: (
+            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.hex }}></div>
+        )
+    })), []);
 
     const timeOptions: MultiOption[] = [
-        { id: 'today', label: 'Added Today' },
-        { id: '7d', label: 'Last 7 Days' },
-        { id: '30d', label: 'Last 30 Days' },
+        { id: 'today', label: 'Added Today', icon: <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d={ICONS.CALENDAR} strokeWidth={2.5} strokeLinecap="round"/></svg> },
+        { id: '7d', label: 'Last 7 Days', icon: <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d={ICONS.CALENDAR} strokeWidth={2.5} strokeLinecap="round"/></svg> },
+        { id: '30d', label: 'Last 30 Days', icon: <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d={ICONS.CALENDAR} strokeWidth={2.5} strokeLinecap="round"/></svg> },
     ];
 
     const filteredAndSortedMovies = useMemo(() => {
@@ -301,7 +351,7 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search by movie name..."
+                            placeholder="Search by movie name or ID..."
                             className="w-full h-full pl-11 pr-4 bg-gray-900 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-colors duration-200 text-sm font-medium outline-none"
                         />
                     </div>
@@ -349,7 +399,7 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
                     />
                     <MultiSelectDropdown 
                         label="2D Channels"
-                        options={singleSelectChannelOptions}
+                        options={singleSelectChannelOptions.map(o => ({ ...o, icon: <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d={ICONS.SQUARE} /></svg> }))}
                         selectedIds={selected2DIds}
                         onChange={setSelected2DIds}
                         className="w-full h-11"
@@ -378,11 +428,11 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
                     <table className="min-w-full divide-y divide-gray-700/50 table-fixed">
                         <thead className="bg-gray-900/50">
                             <tr>
-                                <th className="px-4 py-3 w-12 text-center sticky left-0 z-10 bg-inherit shadow-[4px_0_10px_rgba(0,0,0,0.2)]">
+                                <th className="px-4 py-3 w-16 text-center sticky left-0 z-10 bg-inherit shadow-[4px_0_10px_rgba(0,0,0,0.2)]">
                                     <CircularCheckbox checked={filteredAndSortedMovies.length > 0 && selectedIds.length === filteredAndSortedMovies.length} onChange={handleToggleAll} label="Select all movies" />
                                 </th>
                                 {isVisible('name') && (
-                                    <SortableHeader label="Movie Title" sortKey="name" currentSort={sortConfig} onSort={handleSort} className="w-[250px] min-w-[200px]" icon={<svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={ICONS.FILM} /></svg>} />
+                                    <SortableHeader label="Movie Title" sortKey="name" currentSort={sortConfig} onSort={handleSort} className="w-[300px] min-w-[220px]" icon={<svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d={ICONS.FILM} /></svg>} />
                                 )}
                                 {isVisible('status') && (
                                     <SortableHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSort} align="center" className="w-[160px] min-w-[160px]" icon={<svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={ICONS.TAG} /></svg>} />
@@ -406,12 +456,42 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
                                  const isSelected = selectedIds.includes(movie.id);
                                  const channel3DId = movie.channel3DIds?.[0] || movie.channel3DId || '';
                                  const channel2DId = movie.channel2DIds?.[0] || movie.channel2DId || '';
+                                 
+                                 // Display Shortened ID prefix
+                                 const displayId = channel3DId ? channel3DId.slice(-6) : (movie.id.slice(-6).toUpperCase());
+
                                  return (
-                                    <tr key={movie.id} className={`hover:bg-white/[0.03] transition-colors group ${isSelected ? 'bg-indigo-900/20' : ''}`} onClick={(e) => { if (!(e.target as HTMLElement).closest('button, input, .no-row-click')) handleToggleRow(movie.id); }}>
-                                        <td className="px-4 py-2.5 whitespace-nowrap sticky left-0 z-10 bg-inherit"><CircularCheckbox checked={isSelected} onChange={() => handleToggleRow(movie.id)} onClick={(e) => e.stopPropagation()} /></td>
-                                        {isVisible('name') && <td className="px-4 py-2.5 align-middle"><div className="text-[13px] font-bold text-gray-200 group-hover:text-indigo-400 transition-colors truncate leading-snug">{movie.name}</div></td>}
+                                    <tr key={movie.id} className={`hover:bg-white/[0.03] transition-colors group ${isSelected ? 'bg-indigo-900/20' : ''}`}>
+                                        <td 
+                                            className="px-4 py-2.5 whitespace-nowrap sticky left-0 z-10 bg-inherit"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleToggleRow(movie.id);
+                                            }}
+                                        >
+                                            <div className="flex justify-center items-center h-full">
+                                                <CircularCheckbox checked={isSelected} onChange={() => {}} />
+                                            </div>
+                                        </td>
+                                        {isVisible('name') && (
+                                            <td className="px-4 py-2.5 align-middle">
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <IdPill id={displayId} fullId={channel3DId || movie.id} />
+                                                    <div className="text-[13px] font-bold text-gray-200 group-hover:text-indigo-400 transition-colors truncate leading-snug">
+                                                        {movie.name}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        )}
                                         {isVisible('status') && <td className="px-4 py-2.5 align-middle text-center no-row-click"><div className="flex justify-center w-full"><SearchableSelect value={movie.status} options={STATUS_OPTIONS} onChange={(val) => onUpdateMovie(movie.id, { status: val as MovieStatus })} className="w-[140px]" variant="default" /></div></td>}
-                                        {isVisible('addedAt') && <td className="px-4 py-2.5 align-middle"><div className="flex flex-col text-center"><span className="text-[10px] font-bold text-gray-300 whitespace-nowrap">{new Date(movie.addedAt).toLocaleDateString()}</span><span className="text-[8px] text-gray-500 opacity-60 whitespace-nowrap">{new Date(movie.addedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div></td>}
+                                        {isVisible('addedAt') && (
+                                            <td className="px-4 py-2.5 align-middle">
+                                                <div className="flex flex-col text-center">
+                                                    <span className="text-[10px] font-bold text-gray-300 whitespace-nowrap">{new Date(movie.addedAt).toLocaleDateString()}</span>
+                                                    <span className="text-[10px] text-gray-400 font-semibold whitespace-nowrap mt-0.5">{new Date(movie.addedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                </div>
+                                            </td>
+                                        )}
                                         {isVisible('3d') && <td className="px-4 py-2.5 align-middle text-center no-row-click"><div className="flex justify-center w-full"><SearchableSelect value={channel3DId} options={singleSelectChannelOptions} onChange={(id) => onUpdateMovie(movie.id, { channel3DIds: [id] })} placeholder="Select 3D..." className="w-[160px]" variant="minimal" /></div></td>}
                                         {isVisible('2d') && <td className="px-4 py-2.5 align-middle text-center no-row-click"><div className="flex justify-center w-full"><SearchableSelect value={channel2DId} options={singleSelectChannelOptions} onChange={(id) => onUpdateMovie(movie.id, { channel2DIds: [id] })} placeholder="Select 2D..." className="w-[160px]" variant="minimal" /></div></td>}
                                         {isVisible('note') && <td className="px-4 py-2.5 align-middle no-row-click"><NoteInput initialValue={movie.note || ''} onSave={(val) => onUpdateMovie(movie.id, { note: val })} /></td>}

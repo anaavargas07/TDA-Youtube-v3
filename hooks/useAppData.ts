@@ -60,7 +60,6 @@ export const useAppData = (session: any) => {
                     thumbnailUrl: c.thumbnail_url, subscriberCount: c.subscriber_count, videoCount: c.video_count,
                     viewCount: c.view_count, publishedAt: c.published_at, uploadsPlaylistId: c.uploads_playlist_id,
                     history: c.history || [], status: c.status as any, addedAt: new Date(c.added_at).getTime(),
-                    // Fix: Map c.oldest_video to oldestVideo property (camelCase)
                     newestVideo: c.newest_video, oldestVideo: c.oldest_video,
                     lastRefreshedAt: c.last_refreshed_at ? new Date(c.last_refreshed_at).getTime() : undefined,
                     engagementStatus: c.engagement_status || 'undecided',
@@ -82,9 +81,12 @@ export const useAppData = (session: any) => {
                 const { data: moviesData } = await supabase.from('movies').select('*');
                 if (moviesData) {
                     setMovies(moviesData.map(m => ({
-                        id: m.id, name: m.name, addedAt: m.added_at, channel3DId: m.channel_3d_id || '', 
-                        channel2DId: m.channel_2d_id || '', status: m.status as any, note: m.note || '',
-                        channel3DIds: m.channel_3_ids || [], channel2DIds: m.channel_2_ids || [] 
+                        id: m.id, name: m.name, addedAt: m.added_at, 
+                        channel3DId: m.channel_3d_id || '', 
+                        channel2DId: m.channel_2d_id || '', 
+                        status: m.status as any, note: m.note || '',
+                        channel3DIds: m.channel_3d_ids || [], 
+                        channel2DIds: m.channel_2d_ids || [] 
                     })));
                 }
             } catch (err) { setError("Failed to sync data."); } finally { setIsLoading(false); }
@@ -113,7 +115,6 @@ export const useAppData = (session: any) => {
                 const existing = trackedChannels.find(c => c.id === stats.id);
                 if (!existing) continue;
 
-                // QUOTA OPTIMIZATION: Only fetch newest video if video count changed or missing
                 let newest = existing.newestVideo;
                 if (!newest || existing.videoCount !== stats.videoCount) {
                     newest = await getAbsoluteNewestVideo(existing.uploadsPlaylistId);
@@ -179,7 +180,6 @@ export const useAppData = (session: any) => {
                 const stats = await getChannelStats(channelId);
                 const today = getTodaysDateString();
                 const dbChannel = { 
-                    // Fix: Use camelCase properties from stats (ChannelStats object)
                     id: stats.id, user_id: session.user.id, title: stats.title, 
                     description: stats.description, custom_url: stats.customUrl, 
                     thumbnail_url: stats.thumbnailUrl, subscriber_count: stats.subscriberCount, 
@@ -187,7 +187,6 @@ export const useAppData = (session: any) => {
                     uploads_playlist_id: stats.uploadsPlaylistId, 
                     history: [{ date: today, timestamp: Date.now(), subscriberCount: stats.subscriberCount, viewCount: stats.viewCount, videoCount: stats.videoCount }], 
                     status: stats.status || 'active', published_at: stats.publishedAt, 
-                    // Fix: stats.newest_video should be stats.newestVideo (camelCase)
                     newest_video: stats.newestVideo, oldest_video: stats.oldestVideo,
                     added_at: new Date().toISOString(),
                     monetization_status: 'undecided',
@@ -249,9 +248,8 @@ export const useAppData = (session: any) => {
         try {
             setMovies(prev => [...newMovies, ...prev]);
             await supabase.from('movies').insert(newMovies.map(m => ({
-                // Fix: added_at should map to m.addedAt (m is of type Movie)
                 id: m.id, user_id: session.user.id, name: m.name, added_at: m.addedAt, status: m.status, note: m.note,
-                channel_3_ids: m.channel3DIds, channel_2_ids: m.channel2DIds
+                channel_3d_ids: m.channel3DIds, channel_2d_ids: m.channel2DIds
             })));
         } catch (err: any) { setError("Failed to save movies."); }
     };
@@ -262,8 +260,14 @@ export const useAppData = (session: any) => {
         try {
             const dbUpdates: any = {};
             if (updates.status) dbUpdates.status = updates.status;
-            if (updates.channel3DIds) { dbUpdates.channel_3_ids = updates.channel3DIds; dbUpdates.channel_3d_id = updates.channel3DIds[0] || ''; }
-            if (updates.channel2DIds) { dbUpdates.channel_2_ids = updates.channel2DIds; dbUpdates.channel_2d_id = updates.channel2DIds[0] || ''; }
+            if (updates.channel3DIds) { 
+                dbUpdates.channel_3d_ids = updates.channel3DIds; 
+                dbUpdates.channel_3d_id = updates.channel3DIds[0] || ''; 
+            }
+            if (updates.channel2DIds) { 
+                dbUpdates.channel_2d_ids = updates.channel2DIds; 
+                dbUpdates.channel_2d_id = updates.channel2DIds[0] || ''; 
+            }
             if (updates.note !== undefined) dbUpdates.note = updates.note;
             await supabase.from('movies').update(dbUpdates).eq('id', id).eq('user_id', session.user.id);
         } catch (err: any) { setError("Failed to save update."); }
@@ -277,7 +281,7 @@ export const useAppData = (session: any) => {
 
     const handleDeleteMovie = async (id: string) => {
         if (!session) return;
-        setMovies(prev => prev.filter(m => ! (m.id === id)));
+        setMovies(prev => prev.filter(m => !(m.id === id)));
         try { await supabase.from('movies').delete().eq('id', id).eq('user_id', session.user.id); } catch (err: any) {}
     };
     
