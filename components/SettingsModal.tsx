@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ApiKeyManager } from './ApiKeyManager';
 import { AppSettings, ApiKey } from '../types';
 
@@ -51,15 +52,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         }
     };
 
-    return (
+    return createPortal(
         <div 
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50"
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[150] animate-fade-in"
             onClick={onClose}
             role="dialog"
             aria-modal="true"
         >
             <div 
-                className="bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl border border-indigo-500/30 m-4 flex flex-col md:flex-row overflow-hidden h-[80vh] md:h-[600px]"
+                className="bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl border border-indigo-500/30 m-4 flex flex-col md:flex-row overflow-hidden h-[80vh] md:h-[600px] animate-fade-in-up"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Sidebar / Tabs */}
@@ -158,6 +159,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };

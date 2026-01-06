@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../lib/supabase';
 import { UserProfile } from '../types';
 
@@ -57,9 +58,9 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ isOp
         }
     };
 
-    return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100]" onClick={onClose}>
-            <div className="bg-[#1e293b] w-full max-w-md rounded-2xl shadow-2xl border border-white/5 overflow-hidden animate-fade-in" onClick={e => e.stopPropagation()}>
+    return createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[150] animate-fade-in" onClick={onClose}>
+            <div className="bg-[#1e293b] w-full max-w-md rounded-2xl shadow-2xl border border-white/5 overflow-hidden animate-fade-in-up" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center p-6 border-b border-white/5">
                     <div>
                         <h2 className="text-xl font-bold text-white">Account Settings</h2>
@@ -164,6 +165,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ isOp
                     </div>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };

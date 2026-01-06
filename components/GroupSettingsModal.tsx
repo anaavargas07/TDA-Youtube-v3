@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import type { ChannelGroup, ChannelStats } from '../types';
-import { formatNumber } from '../utils/helpers';
+import { formatNumber, formatDate } from '../utils/helpers';
 
 interface GroupSettingsModalProps {
     isOpen: boolean;
@@ -117,20 +118,20 @@ export const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({ isOpen, 
         return sortConfig.direction === 'desc' ? '▼' : '▲';
     };
 
-    return (
+    return createPortal(
          <div 
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[110]"
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[110] animate-fade-in"
             onClick={onClose}
             role="dialog"
             aria-modal="true"
             aria-labelledby="group-modal-title"
         >
             <div 
-                className="bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl border border-indigo-500/30 m-4 flex flex-col"
+                className="bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl border border-indigo-500/30 m-4 flex flex-col animate-fade-in-up"
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="flex justify-between items-center p-4 border-b border-gray-700">
-                    <h2 id="group-modal-title" className="text-xl font-bold">
+                    <h2 id="group-modal-title" className="text-xl font-bold text-white">
                         {existingGroup ? 'Edit Group' : 'Create New Group'}
                     </h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-white" aria-label="Close modal">
@@ -139,7 +140,7 @@ export const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({ isOpen, 
                         </svg>
                     </button>
                 </div>
-                <div className="p-6 space-y-6 overflow-y-auto max-h-[70vh]">
+                <div className="p-6 space-y-6 overflow-y-auto max-h-[70vh] custom-scrollbar">
                     <div>
                         <label htmlFor="groupName" className="block text-sm font-medium text-gray-300 mb-2">Group Name</label>
                         <input
@@ -149,7 +150,7 @@ export const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({ isOpen, 
                             onChange={(e) => setName(e.target.value)}
                             onKeyDown={handleKeyDown}
                             placeholder="e.g., Main Competitors"
-                            className="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                            className="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors text-white"
                         />
                         <p className="text-[10px] text-gray-500 mt-1">Tip: Press Ctrl + Enter to save quickly.</p>
                     </div>
@@ -178,7 +179,7 @@ export const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({ isOpen, 
                                     <button onClick={() => handleSortChange('addedAt')} className="hover:text-white">Date Added {getSortIndicator('addedAt')}</button>
                                 </div>
                             </div>
-                            <div className="space-y-1 p-1 max-h-60 overflow-y-auto">
+                            <div className="space-y-1 p-1 max-h-60 overflow-y-auto custom-scrollbar">
                                 {sortedChannels.length > 0 ? sortedChannels.map(channel => (
                                     <label key={channel.id} className="flex items-center p-2 rounded-md hover:bg-gray-700/50 cursor-pointer transition-colors">
                                         <input
@@ -193,7 +194,7 @@ export const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({ isOpen, 
                                         </div>
                                         <div className="w-24 text-right text-sm text-gray-300 flex-shrink-0">{formatNumber(channel.subscriberCount)}</div>
                                         <div className="w-24 text-right text-sm text-gray-300 flex-shrink-0">{formatNumber(channel.videoCount)}</div>
-                                        <div className="w-28 text-right text-xs text-gray-400 pr-2 flex-shrink-0">{channel.addedAt ? new Date(channel.addedAt).toLocaleDateString() : 'N/A'}</div>
+                                        <div className="w-28 text-right text-xs text-gray-400 pr-2 flex-shrink-0">{formatDate(channel.addedAt)}</div>
                                     </label>
                                 )) : (
                                     <p className="text-sm text-gray-500 text-center py-4">No channels tracked yet. Add channels on the main dashboard first.</p>
@@ -206,11 +207,12 @@ export const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({ isOpen, 
                     <button onClick={onClose} className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg mr-2">
                         Cancel
                     </button>
-                    <button onClick={handleSave} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">
+                    <button onClick={handleSave} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg shadow-indigo-500/20">
                         Save Group
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };

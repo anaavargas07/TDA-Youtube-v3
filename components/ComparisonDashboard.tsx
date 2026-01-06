@@ -1,6 +1,7 @@
+
 import React, { useState, useMemo } from 'react';
 import type { ChannelComparisonData, ChannelGroup, VideoStat } from '../types';
-import { formatNumber, formatRelativeTime, exportToCsv } from '../utils/helpers';
+import { formatNumber, formatRelativeTime, exportToCsv, formatDate } from '../utils/helpers';
 import { MiniVideoDisplay } from './MiniVideoDisplay';
 
 const StatBar: React.FC<{ value: number, max: number, label: string }> = ({ value, max, label }) => {
@@ -58,7 +59,7 @@ interface ComparisonDashboardProps {
     onToggleHighQuotaFeatures: (isEnabled: boolean) => void;
 }
 
-const formatDate = (date: Date) => date.toISOString().split('T')[0];
+const formatDateISO = (date: Date) => date.toISOString().split('T')[0];
 
 export const ComparisonDashboard: React.FC<ComparisonDashboardProps> = ({ group, data, onBack, dateRange, onDateRangeChange, isHighQuotaFeaturesEnabled, onToggleHighQuotaFeatures }) => {
     const [localDateRange, setLocalDateRange] = useState(dateRange ?? { start: '', end: '' });
@@ -86,22 +87,22 @@ export const ComparisonDashboard: React.FC<ComparisonDashboardProps> = ({ group,
             end = new Date(end.getFullYear(), end.getMonth(), 0);
             start = new Date(end.getFullYear(), end.getMonth(), 1);
         }
-        setLocalDateRange({ start: formatDate(start), end: formatDate(end) });
+        setLocalDateRange({ start: formatDateISO(start), end: formatDateISO(end) });
     };
 
     const handleExport = () => {
         const filename = `YouTube_Comparison_${group.name.replace(/ /g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
         const dataToExport = sortedData.map(channel => ({
             channelTitle: channel.title,
-            createdDate: new Date(channel.publishedAt).toLocaleDateString(),
+            createdDate: formatDate(channel.publishedAt),
             channelHandle: channel.customUrl,
             subscribers: parseInt(channel.subscriberCount, 10),
             views: parseInt(channel.viewCount, 10),
             videos: parseInt(channel.videoCount, 10),
             newestVideoTitle: channel.newestVideo?.title ?? 'N/A',
-            newestVideoDate: channel.newestVideo?.publishedAt ? new Date(channel.newestVideo.publishedAt).toLocaleDateString() : 'N/A',
+            newestVideoDate: channel.newestVideo?.publishedAt ? formatDate(channel.newestVideo.publishedAt) : 'N/A',
             oldestVideoTitle: channel.oldestVideo?.title ?? 'N/A',
-            oldestVideoDate: channel.oldestVideo?.publishedAt ? new Date(channel.oldestVideo.publishedAt).toLocaleDateString() : 'N/A',
+            oldestVideoDate: channel.oldestVideo?.publishedAt ? formatDate(channel.oldestVideo.publishedAt) : 'N/A',
         }));
         exportToCsv(filename, dataToExport);
     };
@@ -253,7 +254,7 @@ export const ComparisonDashboard: React.FC<ComparisonDashboardProps> = ({ group,
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                                    {new Date(channel.publishedAt).toLocaleDateString()}
+                                    {formatDate(channel.publishedAt)}
                                 </td>
                                 <td className="px-6 py-4">
                                     <StatBar value={parseInt(channel.subscriberCount, 10)} max={maxValues.subs} label={formatNumber(channel.subscriberCount)} />

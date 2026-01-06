@@ -48,6 +48,7 @@ export interface Movie {
   id: string;
   name: string;
   addedAt: string;
+  lastUpdatedAt?: string; // New field
   channel3DId: string; // Legacy support
   channel2DId: string; // Legacy support
   channel3DIds?: string[]; // Multi-channel support
@@ -61,7 +62,7 @@ export interface ChannelGroup {
   name: string;
   channelIds: string[];
   createdAt: string;
-  color?: string; // New: Color for the group dot
+  color?: string;
 }
 
 export interface ApiKey {

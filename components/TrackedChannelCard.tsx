@@ -1,7 +1,7 @@
 
 import React from 'react';
 import type { ChannelStats } from '../types';
-import { formatNumber, formatRelativeTime } from '../utils/helpers';
+import { formatNumber, formatRelativeTime, formatDate } from '../utils/helpers';
 
 interface TrackedChannelCardProps {
     channel: ChannelStats;
@@ -25,7 +25,7 @@ export const TrackedChannelCard: React.FC<TrackedChannelCardProps> = ({ channel,
                 
                 <div className="my-2 text-center">
                     <p className="text-xs text-gray-500">
-                        Since: {new Date(channel.publishedAt).toLocaleDateString()}
+                        Since: {formatDate(channel.publishedAt)}
                     </p>
                     {channel.lastRefreshedAt && (
                         <div 

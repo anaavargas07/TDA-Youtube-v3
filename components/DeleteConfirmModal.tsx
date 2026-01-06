@@ -1,5 +1,6 @@
 
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 interface DeleteConfirmModalProps {
     isOpen: boolean;
@@ -31,9 +32,9 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
 
     if (!isOpen) return null;
 
-    return (
+    return createPortal(
         <div 
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[100]"
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[9999] animate-fade-in"
             onClick={onClose}
         >
             <div 
@@ -69,6 +70,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
                     </div>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };

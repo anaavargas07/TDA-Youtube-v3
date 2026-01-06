@@ -9,8 +9,9 @@ import { BulkActionBar } from './BulkActionBar';
 import { CircularCheckbox } from './CircularCheckbox';
 import { SortableHeader } from './SortableHeader';
 import type { Movie, MovieStatus, ChannelStats, AppSettings } from '../types';
+import { formatDate } from '../utils/helpers';
 
-type SortKey = 'name' | 'addedAt' | 'status' | 'note';
+type SortKey = 'name' | 'addedAt' | 'lastUpdatedAt' | 'status' | 'note';
 type SortDirection = 'asc' | 'desc';
 
 interface MoviesViewProps {
@@ -27,6 +28,7 @@ interface MoviesViewProps {
 // Icon Paths Constants for Consistency
 const ICONS = {
     CALENDAR: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z",
+    CLOCK: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z",
     TAG: "M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z",
     CUBE: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4",
     SQUARE: "M3 10h18M7 15h10m-14-5a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2v-8z",
@@ -82,6 +84,7 @@ const ALL_MOVIE_COLUMNS = [
     { id: 'name', label: 'Movie Title' },
     { id: 'status', label: 'Status' },
     { id: 'addedAt', label: 'Added At' },
+    { id: 'lastUpdatedAt', label: 'Last Updated' }, // Added new column
     { id: '3d', label: '3D Chan.' },
     { id: '2d', label: '2D Chan.' },
     { id: 'note', label: 'Note' },
@@ -233,6 +236,17 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
         { id: '30d', label: 'Last 30 Days', icon: <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d={ICONS.CALENDAR} strokeWidth={2.5} strokeLinecap="round"/></svg> },
     ];
 
+    // Helper to determine time status and color
+    const getTimeStatus = (dateStr: string) => {
+        if (!dateStr) return { color: 'text-gray-400', dot: '', showDot: false };
+        const diff = Date.now() - new Date(dateStr).getTime();
+        const hours = diff / (1000 * 60 * 60);
+        
+        if (hours < 1) return { color: 'text-red-400', dot: 'bg-red-500', showDot: true };
+        if (hours < 24) return { color: 'text-emerald-400', dot: 'bg-emerald-500', showDot: true };
+        return { color: 'text-gray-400', dot: '', showDot: false };
+    };
+
     const filteredAndSortedMovies = useMemo(() => {
         let result = movies.filter(m => {
             const matchesSearch = m.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -272,11 +286,13 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
                 if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
                 return 0;
             }
+            
             let valA: any = a[sortConfig.key as keyof Movie];
             let valB: any = b[sortConfig.key as keyof Movie];
-            if (sortConfig.key === 'addedAt') {
-                valA = new Date(valA).getTime();
-                valB = new Date(valB).getTime();
+            
+            if (sortConfig.key === 'addedAt' || sortConfig.key === 'lastUpdatedAt') {
+                valA = valA ? new Date(valA).getTime() : 0;
+                valB = valB ? new Date(valB).getTime() : 0;
             } else if (typeof valA === 'string') {
                 valA = valA.toLowerCase();
                 valB = (valB || '').toLowerCase();
@@ -461,6 +477,9 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
                                 {isVisible('addedAt') && (
                                     <SortableHeader label="Added At" sortKey="addedAt" currentSort={sortConfig} onSort={handleSort} className="w-[120px] min-w-[120px]" icon={<svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={ICONS.CALENDAR} /></svg>} />
                                 )}
+                                {isVisible('lastUpdatedAt') && (
+                                    <SortableHeader label="Last Updated" sortKey="lastUpdatedAt" currentSort={sortConfig} onSort={handleSort} className="w-[130px] min-w-[130px]" icon={<svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={ICONS.CLOCK} /></svg>} />
+                                )}
                                 {isVisible('3d') && (
                                     <th className="px-4 py-3 text-center text-sm font-medium text-gray-300 w-[180px] min-w-[180px] whitespace-nowrap overflow-hidden"><div className="flex items-center justify-center gap-2 opacity-90 truncate"><svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={ICONS.CUBE} /></svg>3D Chan.</div></th>
                                 )}
@@ -480,6 +499,9 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
                                  
                                  // Display unique ID based on Movie ID (Shortened to 5 chars)
                                  const displayId = movie.id.slice(0, 5).toUpperCase();
+
+                                 const addedStatus = getTimeStatus(movie.addedAt);
+                                 const updatedStatus = getTimeStatus(movie.lastUpdatedAt || '');
 
                                  return (
                                     <tr key={movie.id} className={`hover:bg-white/[0.03] transition-colors group ${isSelected ? 'bg-indigo-900/20' : ''}`}>
@@ -508,8 +530,32 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
                                         {isVisible('addedAt') && (
                                             <td className="px-4 py-2.5 align-middle">
                                                 <div className="flex flex-col text-center">
-                                                    <span className="text-[10px] font-bold text-gray-300 whitespace-nowrap">{new Date(movie.addedAt).toLocaleDateString()}</span>
-                                                    <span className="text-[10px] text-gray-400 font-semibold whitespace-nowrap mt-0.5">{new Date(movie.addedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                    <div className="flex items-center justify-center gap-1 mb-0.5">
+                                                        {addedStatus.showDot && <div className={`w-1.5 h-1.5 rounded-full ${addedStatus.dot} animate-pulse`}></div>}
+                                                        <span className={`text-[10px] font-semibold whitespace-nowrap ${addedStatus.color}`}>
+                                                            {new Date(movie.addedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-[10px] font-bold whitespace-nowrap text-gray-300">{formatDate(movie.addedAt)}</span>
+                                                </div>
+                                            </td>
+                                        )}
+                                        {isVisible('lastUpdatedAt') && (
+                                            <td className="px-4 py-2.5 align-middle">
+                                                <div className="flex flex-col text-center">
+                                                    {movie.lastUpdatedAt ? (
+                                                        <>
+                                                            <div className="flex items-center justify-center gap-1 mb-0.5">
+                                                                {updatedStatus.showDot && <div className={`w-1.5 h-1.5 rounded-full ${updatedStatus.dot} animate-pulse`}></div>}
+                                                                <span className={`text-[10px] font-semibold whitespace-nowrap ${updatedStatus.color}`}>
+                                                                    {new Date(movie.lastUpdatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                </span>
+                                                            </div>
+                                                            <span className="text-[10px] font-bold whitespace-nowrap text-gray-300">{formatDate(movie.lastUpdatedAt)}</span>
+                                                        </>
+                                                    ) : (
+                                                        <span className="text-[10px] font-bold whitespace-nowrap text-gray-300">-</span>
+                                                    )}
                                                 </div>
                                             </td>
                                         )}

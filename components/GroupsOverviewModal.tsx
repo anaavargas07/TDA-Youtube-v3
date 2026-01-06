@@ -1,4 +1,6 @@
+
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { GroupSummaryCards } from './GroupSummaryCards';
 import { MultiSelectDropdown, Option } from './MultiSelectDropdown';
 import { BulkActionBar } from './BulkActionBar';
@@ -6,6 +8,7 @@ import { DeleteConfirmModal } from './DeleteConfirmModal';
 import { CircularCheckbox } from './CircularCheckbox';
 import { SortableHeader } from './SortableHeader';
 import type { ChannelGroup, ChannelStats, AppSettings } from '../types';
+import { formatDate } from '../utils/helpers';
 
 interface GroupsOverviewModalProps {
     isOpen: boolean;
@@ -140,7 +143,7 @@ export const GroupsOverviewModal: React.FC<GroupsOverviewModalProps> = ({
 
     if (!isOpen) return null;
 
-    return (
+    return createPortal(
         <div 
             className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[100] flex items-center justify-center p-2 md:p-4 animate-fade-in"
             onClick={onClose}
@@ -284,7 +287,7 @@ export const GroupsOverviewModal: React.FC<GroupsOverviewModalProps> = ({
                                             {isVisible('createdAt') && (
                                                 <td className="px-4 py-2.5 whitespace-nowrap">
                                                     <div className="flex flex-col text-center">
-                                                        <span className="text-[10px] font-medium text-gray-300">{new Date(group.createdAt).toLocaleDateString()}</span>
+                                                        <span className="text-[10px] font-medium text-gray-300">{formatDate(group.createdAt)}</span>
                                                         <span className="text-[8px] font-normal text-gray-500 opacity-80">{new Date(group.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                                     </div>
                                                 </td>
@@ -326,6 +329,7 @@ export const GroupsOverviewModal: React.FC<GroupsOverviewModalProps> = ({
                     itemName="group"
                 />
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };

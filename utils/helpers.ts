@@ -1,5 +1,4 @@
 
-
 /**
  * Formats a large number into a more readable string (e.g., 1.2M, 3.4K).
  * @param num The number to format (can be a string or number).
@@ -16,6 +15,23 @@ export const formatNumber = (num: number | string): string => {
     return (number / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
   }
   return number.toString();
+};
+
+/**
+ * Formats a date string into d/m/yyyy format (no leading zeros, full year).
+ * @param dateInput The date string or object.
+ * @returns A string in d/m/yyyy format.
+ */
+export const formatDate = (dateInput: string | number | Date | undefined | null): string => {
+  if (!dateInput) return '-';
+  const date = new Date(dateInput);
+  if (isNaN(date.getTime())) return '-';
+  
+  const day = date.getDate(); // No padding
+  const month = date.getMonth() + 1; // No padding
+  const year = date.getFullYear(); // Full year
+  
+  return `${day}/${month}/${year}`;
 };
 
 /**

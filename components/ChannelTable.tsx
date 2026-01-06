@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import type { ChannelStats, MonetizationStatus, EngagementStatus } from '../types';
-import { formatNumber, formatRelativeTime } from '../utils/helpers';
+import { formatNumber, formatRelativeTime, formatDate } from '../utils/helpers';
 import { MiniVideoDisplay } from './MiniVideoDisplay';
 import { CircularCheckbox } from './CircularCheckbox'; 
 import { SortableHeader } from './SortableHeader'; 
@@ -298,7 +298,7 @@ export const ChannelTable: React.FC<ChannelTableProps> = ({
                                 {isVisible('publishedAt') && (
                                     <td className="px-4 py-2.5 border-b border-gray-700/50">
                                         <div className="flex flex-col text-center">
-                                            <span className="text-[11px] font-bold text-gray-200">{new Date(channel.publishedAt).toLocaleDateString()}</span>
+                                            <span className="text-[11px] font-bold text-gray-200">{formatDate(channel.publishedAt)}</span>
                                             <span className="text-[10px] text-gray-400 font-semibold mt-0.5">{formatRelativeTime(channel.publishedAt)}</span>
                                         </div>
                                     </td>

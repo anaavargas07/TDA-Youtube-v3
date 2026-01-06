@@ -1,5 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Dashboard } from './Dashboard';
 import { ChannelStats, VideoStat, ChannelGroup, SortOrder } from '../types';
 
@@ -86,7 +87,6 @@ const ChannelNavItem: React.FC<{
 
             <div className="text-left min-w-0 flex-1">
                 <p className="text-[11px] font-bold truncate leading-none group-hover:text-white transition-colors">{channel.title}</p>
-                {/* Updated opacity and color for better visibility */}
                 <p className="text-[9px] text-gray-300 opacity-60 font-mono truncate mt-0.5">{channel.id}</p>
             </div>
             
@@ -145,7 +145,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({
 
     if (!isOpen) return null;
 
-    return (
+    return createPortal(
         <div 
             className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[100] flex items-center justify-center p-2 md:p-4 animate-fade-in"
             onClick={onClose}
@@ -251,6 +251,7 @@ export const DashboardModal: React.FC<DashboardModalProps> = ({
                     </div>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };

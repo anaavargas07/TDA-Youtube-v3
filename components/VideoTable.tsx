@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { VideoStat, SortOrder, SortDirection } from '../types';
-import { formatNumber, formatRelativeTime } from '../utils/helpers';
+import { formatNumber, formatRelativeTime, formatDate } from '../utils/helpers';
 import { SortableHeader } from './SortableHeader'; 
 
 interface VideoTableProps {
@@ -150,7 +150,7 @@ export const VideoTable: React.FC<VideoTableProps> = ({ videos, sortOrder, sortD
                                     <td className="px-4 py-2.5 border-b border-slate-800/30">
                                         <div className="flex flex-col items-center">
                                             <span className="text-[10px] font-bold text-slate-200 whitespace-nowrap">{formatRelativeTime(video.publishedAt)}</span>
-                                            <span className="text-[8px] font-medium text-slate-500 mt-0.5 whitespace-nowrap">{new Date(video.publishedAt).toLocaleDateString()}</span>
+                                            <span className="text-[8px] font-medium text-slate-500 mt-0.5 whitespace-nowrap">{formatDate(video.publishedAt)}</span>
                                         </div>
                                     </td>
                                     <td className="px-4 py-2.5 align-middle border-b border-slate-800/30">

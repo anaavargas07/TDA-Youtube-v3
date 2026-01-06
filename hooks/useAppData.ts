@@ -41,6 +41,7 @@ export const useAppData = (session: any) => {
     // Helper to map DB movie to App type
     const mapDbMovieToMovie = (m: any): Movie => ({
         id: m.id, name: m.name, addedAt: m.added_at, 
+        lastUpdatedAt: m.updated_at || m.added_at, // Map updated_at, fallback to added_at
         channel3DId: m.channel_3d_id || '', 
         channel2DId: m.channel_2d_id || '', 
         status: m.status as any, note: m.note || '',
@@ -91,7 +92,7 @@ export const useAppData = (session: any) => {
 
         // --- REALTIME SUBSCRIPTIONS ---
         const channelsSub = supabase.channel('tracked_channels_realtime')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'tracked_channels' }, (payload) => {
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'tracked_channels', filter: `user_id=eq.${session.user.id}` }, (payload) => {
                 if (payload.eventType === 'INSERT') {
                     const newChan = mapDbChannelToStats(payload.new);
                     setTrackedChannels(prev => prev.some(c => c.id === newChan.id) ? prev : [...prev, newChan]);
@@ -103,7 +104,7 @@ export const useAppData = (session: any) => {
             }).subscribe();
 
         const moviesSub = supabase.channel('movies_realtime')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'movies' }, (payload) => {
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'movies', filter: `user_id=eq.${session.user.id}` }, (payload) => {
                 if (payload.eventType === 'INSERT') {
                     const newMovie = mapDbMovieToMovie(payload.new);
                     setMovies(prev => prev.some(m => m.id === newMovie.id) ? prev : [newMovie, ...prev]);
@@ -115,7 +116,7 @@ export const useAppData = (session: any) => {
             }).subscribe();
 
         const groupsSub = supabase.channel('groups_realtime')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'channel_groups' }, (payload) => {
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'channel_groups', filter: `user_id=eq.${session.user.id}` }, (payload) => {
                 if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
                     const group = { 
                         id: payload.new.id, name: payload.new.name, channelIds: payload.new.channel_ids, 
@@ -233,7 +234,7 @@ export const useAppData = (session: any) => {
         const uniqueNewNames = inputNames.filter(name => !movies.some(m => m.name.toLowerCase() === name.toLowerCase()));
         if (uniqueNewNames.length === 0) return;
         const newMovies = uniqueNewNames.map(name => ({
-            id: crypto.randomUUID(), user_id: session.user.id, name, added_at: new Date().toISOString(),
+            id: crypto.randomUUID(), user_id: session.user.id, name, added_at: new Date().toISOString(), updated_at: new Date().toISOString(),
             status: 'Playlist', note: '', channel_3d_ids: [], channel_2d_ids: []
         }));
         try {
@@ -244,7 +245,7 @@ export const useAppData = (session: any) => {
     const handleUpdateMovie = async (id: string, updates: Partial<Movie>) => {
         if (!session) return;
         try {
-            const dbUpdates: any = {};
+            const dbUpdates: any = { updated_at: new Date().toISOString() };
             if (updates.status) dbUpdates.status = updates.status;
             if (updates.channel3DIds) dbUpdates.channel_3d_ids = updates.channel3DIds;
             if (updates.channel2DIds) dbUpdates.channel_2d_ids = updates.channel2DIds;
@@ -256,7 +257,7 @@ export const useAppData = (session: any) => {
     const handleBulkUpdateMovieStatus = async (ids: string[], status: MovieStatus) => {
         if (!session || ids.length === 0) return;
         try { 
-            await supabase.from('movies').update({ status }).in('id', ids).eq('user_id', session.user.id); 
+            await supabase.from('movies').update({ status, updated_at: new Date().toISOString() }).in('id', ids).eq('user_id', session.user.id); 
         } catch (err: any) { setError("Failed bulk update."); }
     };
 
