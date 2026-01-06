@@ -6,6 +6,7 @@ interface Option {
     id: string;
     label: string;
     colorClass?: string;
+    icon?: React.ReactNode;
 }
 
 interface SearchableSelectProps {
@@ -123,22 +124,35 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
                 />
             </div>
             <div className="max-h-48 overflow-y-auto custom-scrollbar py-1">
-                {filteredOptions.length > 0 ? filteredOptions.map(opt => (
-                    <button
-                        key={opt.id}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onChange(opt.id);
-                            setIsOpen(false);
-                            setSearchTerm('');
-                        }}
-                        className={`w-full text-left px-3 py-2 text-xs transition-all duration-200 flex items-center gap-3 normal-case ${opt.id === value ? 'bg-indigo-600/20 text-white' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}
-                    >
-                        {opt.colorClass && <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${opt.colorClass.split(' ').find(c => c.startsWith('text-'))?.replace('text-', 'bg-') || 'bg-gray-400'}`}></span>}
-                        <span className="truncate">{opt.label}</span>
-                        {opt.id === value && <span className="ml-auto text-indigo-400 font-bold">✓</span>}
-                    </button>
-                )) : (
+                {filteredOptions.length > 0 ? filteredOptions.map(opt => {
+                    // Extract text color class (e.g., 'text-red-400') to apply to icon
+                    const textColorClass = opt.colorClass ? opt.colorClass.split(' ').find(c => c.startsWith('text-')) : 'text-gray-400';
+                    const isSelected = opt.id === value;
+
+                    return (
+                        <button
+                            key={opt.id}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onChange(opt.id);
+                                setIsOpen(false);
+                                setSearchTerm('');
+                            }}
+                            className={`w-full text-left px-3 py-2 text-xs transition-all duration-200 flex items-center gap-3 normal-case ${isSelected ? 'bg-indigo-600/20 text-white' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}
+                        >
+                            {opt.icon ? (
+                                <div className={`flex-shrink-0 ${isSelected ? 'text-white' : textColorClass || 'text-current'}`}>
+                                    {opt.icon}
+                                </div>
+                            ) : opt.colorClass ? (
+                                <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${opt.colorClass.split(' ').find(c => c.startsWith('text-'))?.replace('text-', 'bg-') || 'bg-gray-400'}`}></span>
+                            ) : null}
+                            
+                            <span className="truncate">{opt.label}</span>
+                            {isSelected && <span className="ml-auto text-indigo-400 font-bold">✓</span>}
+                        </button>
+                    );
+                }) : (
                     <div className="px-3 py-4 text-center text-xs text-gray-500 italic">No matches found</div>
                 )}
             </div>
@@ -156,8 +170,12 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
                 className={buttonClasses}
             >
                 <div className="flex items-center gap-2 truncate flex-1 justify-center">
-                    {variant === 'minimal' && selectedOption && selectedOption.colorClass && (
-                        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${selectedOption.colorClass.split(' ').find(c => c.startsWith('text-'))?.replace('text-', 'bg-') || 'bg-gray-400'}`}></span>
+                    {selectedOption && (
+                        selectedOption.icon ? (
+                            <div className="flex-shrink-0 text-current">{selectedOption.icon}</div>
+                        ) : (selectedOption.colorClass && variant === 'minimal') ? (
+                            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${selectedOption.colorClass.split(' ').find(c => c.startsWith('text-'))?.replace('text-', 'bg-') || 'bg-gray-400'}`}></span>
+                        ) : null
                     )}
                     <span className="truncate">{selectedOption ? selectedOption.label : placeholder}</span>
                 </div>

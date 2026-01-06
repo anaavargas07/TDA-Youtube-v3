@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -190,7 +191,14 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
                                 <div className={`w-4 h-4 rounded border flex items-center justify-center mr-3 transition-colors ${isSelected ? 'bg-indigo-600 border-indigo-600' : 'border-gray-500 group-hover:border-gray-400'}`}>
                                     {isSelected && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                                 </div>
-                                {option.icon && <div className="text-gray-500 group-hover:text-white transition-colors mr-2 flex-shrink-0">{option.icon}</div>}
+                                {option.icon && (
+                                    <div 
+                                        className="transition-colors mr-2 flex-shrink-0"
+                                        style={{ color: option.color || (isSelected ? 'white' : undefined) }}
+                                    >
+                                        {option.icon}
+                                    </div>
+                                )}
                                 <span className="text-sm text-gray-300 group-hover:text-white truncate flex-1 font-medium">{option.label}</span>
                                 {option.badge !== undefined && (
                                     <span className="ml-2 text-[10px] font-black px-1.5 py-0.5 rounded bg-gray-800 text-gray-500 group-hover:text-indigo-400 border border-white/5 transition-colors">

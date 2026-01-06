@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { SearchableSelect } from './SearchableSelect';
 import { MultiSelectDropdown, Option as MultiOption } from './MultiSelectDropdown';
 import { AddMovieModal } from './AddMovieModal';
@@ -68,14 +68,14 @@ const IdPill: React.FC<{ id: string, fullId: string }> = ({ id, fullId }) => {
     );
 };
 
-export const STATUS_OPTIONS: { id: MovieStatus; label: string; colorClass: string; hex: string }[] = [
-    { id: 'Playlist', label: 'Playlist', colorClass: 'text-blue-400 bg-blue-400/10 border-blue-400/20', hex: '#60a5fa' },
-    { id: 'Download', label: 'Download', colorClass: 'text-purple-400 bg-purple-400/10 border-purple-400/20', hex: '#c084fc' },
-    { id: 'Copyright Check', label: 'Copyright Check', colorClass: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20', hex: '#facc15' },
-    { id: 'Visual Copyright', label: 'Visual Copyright', colorClass: 'text-orange-400 bg-orange-400/10 border-orange-400/20', hex: '#fb923c' },
-    { id: 'Audio Copyright', label: 'Audio Copyright', colorClass: 'text-pink-400 bg-pink-400/10 border-pink-400/20', hex: '#f472b6' },
-    { id: 'Strike Check', label: 'Strike Check', colorClass: 'text-red-400 bg-red-400/10 border-red-400/20', hex: '#f87171' },
-    { id: 'Done', label: 'Done', colorClass: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20', hex: '#34d399' },
+export const STATUS_OPTIONS: { id: MovieStatus; label: string; colorClass: string; hex: string; iconPath: string }[] = [
+    { id: 'Playlist', label: 'Playlist', colorClass: 'text-blue-400 bg-blue-400/10 border-blue-400/20', hex: '#60a5fa', iconPath: 'M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
+    { id: 'Download', label: 'Download', colorClass: 'text-purple-400 bg-purple-400/10 border-purple-400/20', hex: '#c084fc', iconPath: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4' },
+    { id: 'Copyright Check', label: 'Copyright Check', colorClass: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20', hex: '#facc15', iconPath: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z' },
+    { id: 'Visual Copyright', label: 'Visual Copyright', colorClass: 'text-orange-400 bg-orange-400/10 border-orange-400/20', hex: '#fb923c', iconPath: 'M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z' },
+    { id: 'Audio Copyright', label: 'Audio Copyright', colorClass: 'text-pink-400 bg-pink-400/10 border-pink-400/20', hex: '#f472b6', iconPath: 'M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z' },
+    { id: 'Strike Check', label: 'Strike Check', colorClass: 'text-red-400 bg-red-400/10 border-red-400/20', hex: '#f87171', iconPath: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' },
+    { id: 'Done', label: 'Done', colorClass: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20', hex: '#34d399', iconPath: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
 ];
 
 const ALL_MOVIE_COLUMNS = [
@@ -187,15 +187,22 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
         };
     }, [activeBulkMenu, selectedIds.length]);
 
-    const singleSelectChannelOptions = useMemo(() => channels.map(c => ({ 
-        id: c.id, 
-        label: c.title, 
-        colorClass: getChannelColorClass(c.id),
-        icon: (
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d={ICONS.CUBE} />
-            </svg>
-        )
+    const singleSelectChannelOptions = useMemo(() => channels.map(c => {
+        const colorClass = getChannelColorClass(c.id);
+        const colorHex = colorClass.split(' ').find(cls => cls.startsWith('text-'))?.replace('text-', 'bg-') || 'bg-gray-400';
+        return { 
+            id: c.id, 
+            label: c.title, 
+            colorClass: colorClass,
+            // Use a simple colored dot for the dropdown/select
+            icon: <div className={`w-2 h-2 rounded-full ${colorHex}`}></div>
+        };
+    }), [channels]);
+
+    const tableSelectChannelOptions = useMemo(() => channels.map(c => ({
+        id: c.id,
+        label: c.title,
+        colorClass: getChannelColorClass(c.id)
     })), [channels]);
 
     const statusDropdownOptions: MultiOption[] = useMemo(() => STATUS_OPTIONS.map(s => ({ 
@@ -203,7 +210,20 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
         label: s.label, 
         color: s.hex,
         icon: (
-            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.hex }}></div>
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={s.iconPath} />
+            </svg>
+        )
+    })), []);
+
+    const tableStatusOptions = useMemo(() => STATUS_OPTIONS.map(s => ({
+        id: s.id,
+        label: s.label,
+        colorClass: s.colorClass,
+        icon: (
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={s.iconPath} />
+            </svg>
         )
     })), []);
 
@@ -215,7 +235,8 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
 
     const filteredAndSortedMovies = useMemo(() => {
         let result = movies.filter(m => {
-            const matchesSearch = m.name.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesSearch = m.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                  m.id.toLowerCase().includes(searchQuery.toLowerCase());
             const movie3DIds = m.channel3DIds || (m.channel3DId ? [m.channel3DId] : []);
             const movie2DIds = m.channel2DIds || (m.channel2DId ? [m.channel2DId] : []);
             const matches3D = selected3DIds.length === 0 || movie3DIds.some(id => selected3DIds.includes(id));
@@ -379,7 +400,7 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
                         selectedIds={timeFilter}
                         onChange={setTimeFilter}
                         className="w-full h-11"
-                        icon={<svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={ICONS.CALENDAR} /></svg>}
+                        icon={<svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={ICONS.CALENDAR} /></svg>}
                     />
                     <MultiSelectDropdown 
                         label="Status"
@@ -399,7 +420,7 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
                     />
                     <MultiSelectDropdown 
                         label="2D Channels"
-                        options={singleSelectChannelOptions.map(o => ({ ...o, icon: <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d={ICONS.SQUARE} /></svg> }))}
+                        options={singleSelectChannelOptions}
                         selectedIds={selected2DIds}
                         onChange={setSelected2DIds}
                         className="w-full h-11"
@@ -435,7 +456,7 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
                                     <SortableHeader label="Movie Title" sortKey="name" currentSort={sortConfig} onSort={handleSort} className="w-[300px] min-w-[220px]" icon={<svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d={ICONS.FILM} /></svg>} />
                                 )}
                                 {isVisible('status') && (
-                                    <SortableHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSort} align="center" className="w-[160px] min-w-[160px]" icon={<svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={ICONS.TAG} /></svg>} />
+                                    <SortableHeader label="Status" sortKey="status" currentSort={sortConfig} onSort={handleSort} align="center" className="w-[200px] min-w-[200px]" icon={<svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={ICONS.TAG} /></svg>} />
                                 )}
                                 {isVisible('addedAt') && (
                                     <SortableHeader label="Added At" sortKey="addedAt" currentSort={sortConfig} onSort={handleSort} className="w-[120px] min-w-[120px]" icon={<svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={ICONS.CALENDAR} /></svg>} />
@@ -447,7 +468,7 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
                                     <th className="px-4 py-3 text-center text-sm font-medium text-gray-300 w-[180px] min-w-[180px] whitespace-nowrap overflow-hidden"><div className="flex items-center justify-center gap-2 opacity-90 truncate"><svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={ICONS.SQUARE} /></svg>2D Chan.</div></th>
                                 )}
                                 {isVisible('note') && (
-                                    <th className="px-4 py-3 text-center text-sm font-medium text-gray-300 w-auto min-w-[200px] whitespace-nowrap overflow-hidden"><div className="flex items-center justify-center gap-2 opacity-90 truncate"><svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={ICONS.NOTE} /></svg>Note</div></th>
+                                    <th className="px-4 py-3 text-center text-sm font-medium text-gray-300 w-auto min-w-[150px] whitespace-nowrap overflow-hidden"><div className="flex items-center justify-center gap-2 opacity-90 truncate"><svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={ICONS.NOTE} /></svg>Note</div></th>
                                 )}
                             </tr>
                         </thead>
@@ -457,8 +478,8 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
                                  const channel3DId = movie.channel3DIds?.[0] || movie.channel3DId || '';
                                  const channel2DId = movie.channel2DIds?.[0] || movie.channel2DId || '';
                                  
-                                 // Display Shortened ID prefix
-                                 const displayId = channel3DId ? channel3DId.slice(-6) : (movie.id.slice(-6).toUpperCase());
+                                 // Display unique ID based on Movie ID (Shortened to 5 chars)
+                                 const displayId = movie.id.slice(0, 5).toUpperCase();
 
                                  return (
                                     <tr key={movie.id} className={`hover:bg-white/[0.03] transition-colors group ${isSelected ? 'bg-indigo-900/20' : ''}`}>
@@ -476,14 +497,14 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
                                         {isVisible('name') && (
                                             <td className="px-4 py-2.5 align-middle">
                                                 <div className="flex items-center gap-3 min-w-0">
-                                                    <IdPill id={displayId} fullId={channel3DId || movie.id} />
+                                                    <IdPill id={displayId} fullId={movie.id} />
                                                     <div className="text-[13px] font-bold text-gray-200 group-hover:text-indigo-400 transition-colors truncate leading-snug">
                                                         {movie.name}
                                                     </div>
                                                 </div>
                                             </td>
                                         )}
-                                        {isVisible('status') && <td className="px-4 py-2.5 align-middle text-center no-row-click"><div className="flex justify-center w-full"><SearchableSelect value={movie.status} options={STATUS_OPTIONS} onChange={(val) => onUpdateMovie(movie.id, { status: val as MovieStatus })} className="w-[140px]" variant="default" /></div></td>}
+                                        {isVisible('status') && <td className="px-4 py-2.5 align-middle text-center no-row-click"><div className="flex justify-center w-full"><SearchableSelect value={movie.status} options={tableStatusOptions} onChange={(val) => onUpdateMovie(movie.id, { status: val as MovieStatus })} className="w-[180px]" variant="default" /></div></td>}
                                         {isVisible('addedAt') && (
                                             <td className="px-4 py-2.5 align-middle">
                                                 <div className="flex flex-col text-center">
@@ -516,7 +537,12 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
                         <div className="max-h-60 overflow-y-auto custom-scrollbar">
                             {STATUS_OPTIONS.map(status => (
                                 <button key={status.id} onClick={(e) => { e.stopPropagation(); setPendingBulkValue(status.id); }} className={`w-full text-left px-4 py-2 text-xs transition-colors flex items-center gap-2 justify-between ${pendingBulkValue === status.id ? 'bg-indigo-900/50 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}>
-                                    <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: status.hex }}></span>{status.label}</div>
+                                    <div className="flex items-center gap-2">
+                                        <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={status.iconPath} />
+                                        </svg>
+                                        {status.label}
+                                    </div>
                                     {pendingBulkValue === status.id && <span className="text-indigo-400 font-bold">✓</span>}
                                 </button>
                             ))}
@@ -538,7 +564,10 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
                         <div className="max-h-48 overflow-y-auto custom-scrollbar">
                             {filteredBulkChannels.length > 0 ? filteredBulkChannels.map(c => (
                                 <button key={c.id} onClick={(e) => { e.stopPropagation(); setPendingBulkValue(c.id); }} className={`w-full text-left px-4 py-2 text-xs transition-colors flex justify-between items-center ${pendingBulkValue === c.id ? 'bg-indigo-900/50 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}>
-                                    <span className="truncate pr-2">{c.label}</span>
+                                    <div className="flex items-center gap-2 truncate pr-2">
+                                        {c.icon}
+                                        <span className="truncate">{c.label}</span>
+                                    </div>
                                     {pendingBulkValue === c.id && <span className="text-indigo-400 font-bold flex-shrink-0">✓</span>}
                                 </button>
                             )) : <div className="p-2 text-xs text-gray-500 text-center">No results found</div>}
@@ -560,7 +589,10 @@ export const MoviesView: React.FC<MoviesViewProps> = ({ movies, channels, onAddM
                         <div className="max-h-48 overflow-y-auto custom-scrollbar">
                             {filteredBulkChannels.length > 0 ? filteredBulkChannels.map(c => (
                                 <button key={c.id} onClick={(e) => { e.stopPropagation(); setPendingBulkValue(c.id); }} className={`w-full text-left px-4 py-2 text-xs transition-colors flex justify-between items-center ${pendingBulkValue === c.id ? 'bg-indigo-900/50 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}>
-                                    <span className="truncate pr-2">{c.label}</span>
+                                    <div className="flex items-center gap-2 truncate pr-2">
+                                        {c.icon}
+                                        <span className="truncate">{c.label}</span>
+                                    </div>
                                     {pendingBulkValue === c.id && <span className="text-indigo-400 font-bold flex-shrink-0">✓</span>}
                                 </button>
                             )) : <div className="p-2 text-xs text-gray-500 text-center">No results found</div>}
