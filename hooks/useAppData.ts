@@ -41,7 +41,7 @@ export const useAppData = (session: any) => {
     // Helper to map DB movie to App type
     const mapDbMovieToMovie = (m: any): Movie => ({
         id: m.id, name: m.name, addedAt: m.added_at, 
-        lastUpdatedAt: m.updated_at || m.added_at, // Map updated_at, fallback to added_at
+        lastUpdatedAt: m.updated_at, // Removed fallback to added_at so new movies appear as null
         channel3DId: m.channel_3d_id || '', 
         channel2DId: m.channel_2d_id || '', 
         status: m.status as any, note: m.note || '',
@@ -234,8 +234,15 @@ export const useAppData = (session: any) => {
         const uniqueNewNames = inputNames.filter(name => !movies.some(m => m.name.toLowerCase() === name.toLowerCase()));
         if (uniqueNewNames.length === 0) return;
         const newMovies = uniqueNewNames.map(name => ({
-            id: crypto.randomUUID(), user_id: session.user.id, name, added_at: new Date().toISOString(), updated_at: new Date().toISOString(),
-            status: 'Playlist', note: '', channel_3d_ids: [], channel_2d_ids: []
+            id: crypto.randomUUID(), 
+            user_id: session.user.id, 
+            name, 
+            added_at: new Date().toISOString(),
+            updated_at: null, // Force null to prevent DB default value (now()) from triggering
+            status: 'Playlist', 
+            note: '', 
+            channel_3d_ids: [], 
+            channel_2d_ids: []
         }));
         try {
             await supabase.from('movies').insert(newMovies);
